@@ -1,3 +1,4 @@
+
 package io.mosip.authentication.core.spi.indauth.match;
 
 import java.util.AbstractMap.SimpleEntry;
@@ -31,15 +32,16 @@ public interface MatchType {
 	 */
 	public enum Category {
 
-	/** Demo category */
-	DEMO("demo"),
-	/** OTP category */
-	OTP("otp"),
-	/** Bio category */
-	BIO("bio"),
-
-	/** s-pin category. */
-	SPIN("pin");
+		/** Demo category */
+		DEMO("demo"),
+		/** OTP category */
+		OTP("otp"),
+		/** Bio category */
+		BIO("bio"),
+		/** s-pin category. */
+		SPIN("pin"),
+		/** Token category */
+		KBT("kbt");
 
 		/** The type. */
 		String type;
@@ -163,11 +165,11 @@ public interface MatchType {
 	/**
 	 * Returns the set of given matching strategies.
 	 *
-	 * @param matchingStrategies the matching strategies
+	 * @param items the matching strategies
 	 * @return the sets the
 	 */
-	public static Set<MatchingStrategy> setOf(MatchingStrategy... matchingStrategies) {
-		return Stream.of(matchingStrategies).collect(Collectors.toSet());
+	public static <T>Set<T> setOf(T... items) {
+		return Stream.of(items).collect(Collectors.toSet());
 
 	}
 
@@ -202,3 +204,4 @@ public interface MatchType {
 	}
 
 }
+
