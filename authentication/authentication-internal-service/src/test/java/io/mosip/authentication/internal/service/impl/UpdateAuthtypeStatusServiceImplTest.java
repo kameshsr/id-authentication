@@ -76,6 +76,7 @@ public class UpdateAuthtypeStatusServiceImplTest {
         authtypeStatus1.setAuthSubType("LOCKED");
         authtypeStatus1.setLocked(true);
         authtypeStatusList.add(authtypeStatus1);
-        updateAuthtypeStatusService.updateAuthTypeStatus(tokenId, authtypeStatusList);
+        Object lockExcludedAuthPartners = new Object();
+        updateAuthtypeStatusService.updateAuthTypeStatus(tokenId, authtypeStatusList, lockExcludedAuthPartners);
     }
 }

@@ -1,7 +1,5 @@
 package io.mosip.authentication.internal.service.impl;
 
-import static io.mosip.authentication.core.constant.IdAuthConfigKeyConstants.AUTH_TYPE_STATUS_ACK_TOPIC;
-
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.List;
@@ -52,13 +50,14 @@ public class UpdateAuthtypeStatusServiceImpl implements UpdateAuthtypeStatusServ
 	/**
 	 * Update auth type status.
 	 *
-	 * @param tokenId            the token id
-	 * @param authTypeStatusList the auth type status list
+	 * @param tokenId                  the token id
+	 * @param authTypeStatusList       the auth type status list
+	 * @param lockExcludedAuthPartners
 	 * @throws IdAuthenticationBusinessException the id authentication business
 	 *                                           exception
 	 */
 	@Override
-	public void updateAuthTypeStatus(String tokenId, List<AuthtypeStatus> authTypeStatusList)
+	public void updateAuthTypeStatus(String tokenId, List<AuthtypeStatus> authTypeStatusList, Object lockExcludedAuthPartners)
 			throws IdAuthenticationBusinessException {
 		List<Entry<String, AuthtypeLock>> entitiesForRequestId = authTypeStatusList.stream()
 				.map(authTypeStatus -> new SimpleEntry<>(authTypeStatus.getRequestId(),

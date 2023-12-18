@@ -27,6 +27,7 @@ CREATE TABLE ida.uin_auth_lock(
 	is_deleted boolean DEFAULT FALSE,
 	del_dtimes timestamp,
 	unlock_expiry_datetime timestamp,
+	lock_excluded_auth_partners character varying(256),
 	CONSTRAINT pk_uinal PRIMARY KEY (token_id,auth_type_code,lock_request_datetime)
 
 );

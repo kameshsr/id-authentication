@@ -15,12 +15,13 @@ import io.mosip.idrepository.core.dto.AuthtypeStatus;
 public interface UpdateAuthtypeStatusService {
 
 	/**
-	 * Update auth type status.
-	 *
-	 * @param tokenId the token id
-	 * @param authTypeStatusList the auth type status list
-	 * @throws IdAuthenticationBusinessException the id authentication business exception
-	 */
-	public void updateAuthTypeStatus(String tokenId, List<AuthtypeStatus> authTypeStatusList)
+     * Update auth type status.
+     *
+     * @param tokenId                  the token id
+     * @param authTypeStatusList       the auth type status list
+     * @param lockExcludedAuthPartners
+     * @throws IdAuthenticationBusinessException the id authentication business exception
+     */
+	public void updateAuthTypeStatus(String tokenId, List<AuthtypeStatus> authTypeStatusList, Object lockExcludedAuthPartners)
 			throws IdAuthenticationBusinessException;
 }

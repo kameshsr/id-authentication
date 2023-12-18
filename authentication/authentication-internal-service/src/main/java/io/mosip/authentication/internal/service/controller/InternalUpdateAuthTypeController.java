@@ -1,19 +1,6 @@
 package io.mosip.authentication.internal.service.controller;
 
-import static io.mosip.authentication.core.constant.IdAuthConfigKeyConstants.IDA_WEBSUB_AUTHTYPE_CALLBACK_SECRET;
-
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.mosip.authentication.common.service.helper.AuditHelper;
 import io.mosip.authentication.core.constant.AuditEvents;
 import io.mosip.authentication.core.constant.AuditModules;
@@ -32,12 +19,20 @@ import io.mosip.kernel.websub.api.annotation.PreAuthenticateContentAndVerifyInte
 import io.mosip.kernel.websub.api.model.SubscriptionChangeRequest;
 import io.mosip.kernel.websub.api.model.SubscriptionChangeResponse;
 import io.mosip.kernel.websub.api.model.UnsubscriptionRequest;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import static io.mosip.authentication.core.constant.IdAuthConfigKeyConstants.IDA_WEBSUB_AUTHTYPE_CALLBACK_SECRET;
 
 /**
  * The InternalUpdateAuthTypeController use to fetch Auth Transaction.
@@ -77,11 +72,12 @@ public class InternalUpdateAuthTypeController {
 	public void updateAuthtypeStatus(@RequestBody EventModel eventModel, @PathVariable("partnerId") String partnerId)
 			throws IdAuthenticationAppException, IDDataValidationException {
 		if(eventModel.getEvent() != null && eventModel.getEvent().getData() != null) {
+			Object lockExcludedAuthPartners = eventModel.getEvent().getData().get("lockExcludedAuthPartners");
 			AuthTypeStatusEventDTO event = mapper.convertValue(eventModel.getEvent().getData(), AuthTypeStatusEventDTO.class);
 			try {
 					logger.debug(IdAuthCommonConstants.SESSION_ID, "updateAuthtypeStatus", this.getClass().getCanonicalName(), "handling updateAuthtypeStatus event for partnerId: " + partnerId);
 	
-					authtypeStatusService.updateAuthTypeStatus(event.getTokenId(), event.getAuthTypeStatusList());
+					authtypeStatusService.updateAuthTypeStatus(event.getTokenId(), event.getAuthTypeStatusList(), lockExcludedAuthPartners);
 	
 					auditHelper.audit(AuditModules.AUTH_TYPE_STATUS, AuditEvents.UPDATE_AUTH_TYPE_STATUS_REQUEST_RESPONSE,
 							eventModel.getEvent().getId(), IdType.UIN, "internal auth type status update status : " + true);
