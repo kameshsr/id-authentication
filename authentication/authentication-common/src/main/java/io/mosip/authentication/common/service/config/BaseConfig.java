@@ -21,12 +21,12 @@ import org.springframework.context.annotation.Configuration;
 public class BaseConfig {
 
     @Bean
-    public LanguageUtil computeKeyHelper() {
+    public LanguageUtil languageUtil() {
         return new LanguageUtil();
     }
 
     @Bean
-    public EntityInfoUtil entityInfoHelper() {
+    public EntityInfoUtil entityInfoUtil() {
         return new EntityInfoUtil();
     }
 
