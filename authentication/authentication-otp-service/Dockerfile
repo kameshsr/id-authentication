@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 
 ARG SOURCE
 ARG COMMIT_HASH
@@ -68,6 +68,13 @@ ARG hsm_local_dir=hsm-client
 
 ENV hsm_local_dir_name=${hsm_local_dir}
 
+# install packages and create user
+RUN apt-get -y update \
+&& apt-get install -y unzip sudo adduser \
+&& groupadd -g ${container_user_gid} ${container_user_group} \
+&& useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user} \
+&& adduser ${container_user} sudo \
+&& echo "%sudo ALL=(ALL) NOPASSWD:/home/${container_user}/${hsm_local_dir}/install.sh" >> /etc/sudoers
 
 # set working directory for the user
 WORKDIR /home/${container_user}
@@ -82,15 +89,11 @@ ENV loader_path_env=${loader_path}
 
 ENV current_module_env=authentication-otp-service
 
-ADD configure_start.sh configure_start.sh
+ADD configure_start.sh /home/${container_user}/configure_start.sh
 
 ADD ./lib/* "${loader_path_env}"/
 
-ADD target/${current_module_env}-*.jar ${current_module_env}.jar
-
-EXPOSE 8092
-
-EXPOSE 9010
+RUN chmod +x /home/${container_user}/configure_start.sh
 
 # install packages and create user
 RUN apk -q update \
@@ -108,15 +111,7 @@ USER ${container_user_uid}:${container_user_gid}
 
 ENTRYPOINT [ "./configure_start.sh" ]
 
-CMD if [ "$is_glowroot_env" = "present" ]; then \
-    wget -q "${artifactory_url_env}"/artifactory/libs-release-local/io/mosip/testing/glowroot.zip ; \
-    unzip glowroot.zip ; \
-    rm -rf glowroot.zip ; \
-    sed -i "s/<service_name>/${current_module_env}/g" glowroot/glowroot.properties ; \
-    java -jar -Djava.security.debug=sunpkcs11 -javaagent:glowroot/glowroot.jar -Dspring.cloud.config.label="${spring_config_label_env}" -Dspring.profiles.active="${active_profile_env}" -Dspring.cloud.config.uri="${spring_config_url_env}" -Dloader.path="${loader_path_env}" ${current_module_env}.jar ; \
-    else \
-    java -jar -Djava.security.debug=sunpkcs11 -Dspring.cloud.config.label="${spring_config_label_env}" -Dspring.profiles.active="${active_profile_env}" -Dspring.cloud.config.uri="${spring_config_url_env}" -Dloader.path="${loader_path_env}" ${current_module_env}.jar ; \
-    fi
+CMD java -jar -Djava.security.debug=sunpkcs11 -Dspring.cloud.config.label="${spring_config_label_env}" -Dspring.profiles.active="${active_profile_env}" -Dspring.cloud.config.uri="${spring_config_url_env}" -Dloader.path="${loader_path_env}" ${current_module_env}.jar ; \
 
 #Sample docker run command:
 # sudo docker run --rm -it -e artifactory_url_env="http://artifactory" -e spring_config_label_env="1.0.9" -e active_profile_env="dev" -e spring_config_url_env="http://config-server/config" -e PKCS11_PROXY_SOCKET=tcp://softhsm-ida:5666 -p 8092:8092 authentication-otp-service:1.0.9
