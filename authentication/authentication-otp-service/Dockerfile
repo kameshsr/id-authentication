@@ -68,14 +68,12 @@ ARG hsm_local_dir=hsm-client
 
 ENV hsm_local_dir_name=${hsm_local_dir}
 
-# install packages and create user
 RUN apt-get -y update \
 && apt-get install -y unzip sudo adduser \
 && groupadd -g ${container_user_gid} ${container_user_group} \
 && useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user} \
 && adduser ${container_user} sudo \
 && echo "%sudo ALL=(ALL) NOPASSWD:/home/${container_user}/${hsm_local_dir}/install.sh" >> /etc/sudoers
-
 # set working directory for the user
 WORKDIR /home/${container_user}
 
@@ -95,16 +93,6 @@ ADD ./lib/* "${loader_path_env}"/
 
 RUN chmod +x /home/${container_user}/configure_start.sh
 
-# install packages and create user
-RUN apk -q update \
-&& apk add -q unzip sudo curl bash wget \
-&& addgroup -g ${container_user_gid} ${container_user_group} \
-&& adduser -s /bin/sh -u ${container_user_uid} -G ${container_user_group} -h /home/${container_user} --disabled-password ${container_user} \
-&& addgroup sudo \
-&& adduser ${container_user} sudo \
-&& echo "%sudo ALL=(ALL) NOPASSWD:/home/${container_user}/${hsm_local_dir}/install.sh" >> /etc/sudoers \
-&& chown -R ${container_user}:${container_user} /home/${container_user} \
-&& chmod +x configure_start.sh
 
 # select container user for all tasks
 USER ${container_user_uid}:${container_user_gid}
