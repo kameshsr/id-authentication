@@ -461,7 +461,9 @@ public class CredentialStoreServiceImpl implements CredentialStoreService {
 	 */
 	private void saveSalt(String modulo, String salt) {
 		Integer saltModulo = Integer.valueOf(modulo);
+		System.out.println("saltModulo:- "+saltModulo);
 		if (!uinHashSaltRepo.existsById(saltModulo)) {
+			System.out.println("modulo:- "+modulo);
 			IdaUinHashSalt saltEntity = new IdaUinHashSalt();
 			saltEntity.setId(saltModulo);
 			saltEntity.setSalt(salt);

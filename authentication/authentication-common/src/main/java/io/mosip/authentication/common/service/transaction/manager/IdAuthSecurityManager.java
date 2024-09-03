@@ -457,7 +457,9 @@ public class IdAuthSecurityManager {
 	}
 
 	private String doGetHashForIdAndSaltKey(String id, Integer idModulo) throws IdAuthenticationBusinessException {
+		System.out.println("idModulo"+idModulo);
 		String hashSaltValue = uinHashSaltRepo.retrieveSaltById(idModulo);
+        System.out.println("hashSaltValue"+hashSaltValue);
 		if (hashSaltValue != null) {
 			try {
 				return HMACUtils2.digestAsPlainTextWithSalt(id.getBytes(), hashSaltValue.getBytes());
