@@ -121,7 +121,7 @@ import io.mosip.kernel.websub.api.config.publisher.RestTemplateHelper;
 		, SeparatorHelper.class})
 @ComponentScan(basePackages = { "io.mosip.authentication.service.*", "io.mosip.kernel.core.logger.config",
 		"io.mosip.authentication.common.service.config","io.mosip.authentication.common.service.util",
-		"${mosip.auth.adapter.impl.basepackage}"
+		"io.mosip.kernel.websub.api.config", "${mosip.auth.adapter.impl.basepackage}"
 , "io.mosip.kernel.websub.api.client"}, excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = {
 				"io.mosip.idrepository.core.config.IdRepoDataSourceConfig.*" }))
 @EnableJpaRepositories(basePackages = { "io.mosip.authentication.common.service.repository.*",
