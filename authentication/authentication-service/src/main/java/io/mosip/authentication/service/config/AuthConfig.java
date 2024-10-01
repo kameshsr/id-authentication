@@ -11,6 +11,11 @@ import io.mosip.authentication.common.service.util.EnvUtil;
 @EnableCaching
 @EnableAsync
 public class AuthConfig extends IdAuthConfig {
+
+//	@Bean
+//	public <P> PublisherClient<String, P, HttpHeaders> publisherClient(){
+//		return new PublisherClientImpl<>();
+//	}
 	
 	protected boolean isFingerAuthEnabled() {
 		return (EnvUtil.getAllowedAuthType().contains(BioAuthType.FGR_IMG.getConfigNameValue())

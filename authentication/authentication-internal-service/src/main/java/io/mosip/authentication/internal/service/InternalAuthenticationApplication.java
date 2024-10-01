@@ -5,8 +5,10 @@ import io.mosip.authentication.common.service.integration.*;
 import io.mosip.authentication.common.service.util.*;
 import io.mosip.kernel.pdfgenerator.itext.impl.PDFGeneratorImpl;
 import io.mosip.kernel.websub.api.client.SubscriberClientImpl;
+import io.mosip.kernel.websub.api.config.IntentVerificationConfig;
 import io.mosip.kernel.websub.api.config.WebSubClientConfig;
 import io.mosip.kernel.websub.api.config.publisher.RestTemplateHelper;
+import io.mosip.kernel.websub.api.config.publisher.WebSubPublisherClientConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -135,12 +137,14 @@ import org.springframework.web.client.RestTemplate;
 		PasswordAuthServiceImpl.class, PasswordComparator.class, PDFGeneratorImpl.class,
 		RestTemplateHelper.class, RestTemplate.class, LanguageUtil.class, TypeForIdNameHelper.class
 		, ValidateOtpHelper.class, RequireOtpNotFrozenHelper.class, MatchIdentityDataHelper.class, MatchTypeHelper.class
-		, SeparatorHelper.class, IdentityAttributesForMatchTypeHelper.class, WebSubClientConfig.class, SubscriberClientImpl.class
+		, SeparatorHelper.class, IdentityAttributesForMatchTypeHelper.class, WebSubClientConfig.class, SubscriberClientImpl.class,
+		WebSubPublisherClientConfig.class, IntentVerificationConfig.class
 })
 @ComponentScan(basePackages = { "io.mosip.authentication.internal.service.*",
 		"io.mosip.kernel.core.logger.config",
-		"io.mosip.authentication.common.service.config", "io.mosip.kernel.websub.api.config", "${mosip.auth.adapter.impl.basepackage}",
-	"io.mosip.authentication.common.service.util", "io.mosip.kernel.core.websub.spi.*",},
+		"io.mosip.authentication.common.service.config",
+		"${mosip.auth.adapter.impl.basepackage}",
+	"io.mosip.authentication.common.service.util",},
 		excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = {
 		"io.mosip.idrepository.core.config.IdRepoDataSourceConfig.*" }))
 @EnableJpaRepositories(basePackages = { "io.mosip.authentication.common.service.repository.*",
