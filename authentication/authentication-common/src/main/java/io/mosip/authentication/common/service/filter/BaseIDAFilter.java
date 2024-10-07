@@ -120,7 +120,8 @@ public abstract class BaseIDAFilter implements Filter {
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
-
+mosipLogger.info("reqUrl"+reqUrl);
+		mosipLogger.info("signature in filter chain-"+ ((HttpServletRequest) request).getHeader("signature"));
 		String reqUrl = ((HttpServletRequest) request).getRequestURL().toString();
 		if (reqUrl.contains("swagger") || reqUrl.contains("api-docs") || reqUrl.contains("actuator") || reqUrl.contains("callback")) {
 			chain.doFilter(request, response);
