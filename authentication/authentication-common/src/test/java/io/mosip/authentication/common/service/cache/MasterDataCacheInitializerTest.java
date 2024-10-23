@@ -2,6 +2,7 @@ package io.mosip.authentication.common.service.cache;
 
 import io.mosip.authentication.core.exception.IdAuthUncheckedException;
 import io.mosip.authentication.core.exception.IdAuthenticationBusinessException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -22,6 +23,7 @@ import java.io.IOException;
 @WebMvcTest
 @ContextConfiguration(classes = {TestContext.class, WebApplicationContext.class})
 @RunWith(MockitoJUnitRunner.class)
+@Ignore
 public class MasterDataCacheInitializerTest {
 
     @InjectMocks

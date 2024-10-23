@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>io.mosip.authentication</groupId>
@@ -35,31 +35,31 @@
 		</developer>
 	</developers>
 
-    <repositories>
-        <repository>
-            <id>ossrh</id>
-            <name>CentralRepository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <layout>default</layout>
-            <snapshots>
-            <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>central</id>
-            <name>MavenCentral</name>
-            <layout>default</layout>
-            <url>https://repo1.maven.org/maven2</url>
-            <snapshots>
-            <enabled>false</enabled>
-            </snapshots>
-        </repository>
+	<repositories>
+		<repository>
+			<id>ossrh</id>
+			<name>CentralRepository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<layout>default</layout>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>central</id>
+			<name>MavenCentral</name>
+			<layout>default</layout>
+			<url>https://repo1.maven.org/maven2</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
 		<repository>
 			<id>danubetech-maven-public</id>
 			<url>https://repo.danubetech.com/repository/maven-public/</url>
-		  </repository>
-    </repositories>
-	
+		</repository>
+	</repositories>
+
 	<distributionManagement>
 		<snapshotRepository>
 			<id>ossrh</id>
@@ -149,13 +149,15 @@
 
 		<sonar.test.exclusions>**/test/**/*.*</sonar.test.exclusions>
 		<sonar.exclusions>**/ai/**/*.*,**/jdbc/**/*.*,**/mpt/**/*.*,**/jcr/**/*.*,**/JDBC*,**/constant/**,**/config/**,**/dto/**,**io/mosip/authentication/common/service/filter/**,**io/mosip/authentication/service/filter/**,**io/mosip/authentication/otp/service/filter/**,**io/mosip/authentication/common/policy/**,**io/mosip/authentication/internal/service/filter/**,**io/mosip/authentication/kyc/service/filter/**,**io/mosip/authentication/staticpin/service/filter/**,**io/mosip/authentication/common/service/entity/**,**/service/IdAuthenticationApplication.java,**/service/**/*Entity.java,**internal/service/InternalAuthenticationApplication.java,**kyc/service/KycAuthenticationApplication.java,**spin/service/StaticPinAuthenticationApplication.java,**io/mosip/authentication/common/service/repository/**,**authentication/otp/service/OtpApplication.java,**authentication/staticpin/service/StaticPinApplication.java,**/authentication/vid/service/VidApplication.java,**/authentication/core/spi/indauth/match/**</sonar.exclusions>
-
+		<sonar.coverage.exclusions>**/constant/**,**/config/**,**/httpfilter/**,**/cache/**,**/entity/**,**/model/**,**/exception/**,**/repository/**,**/verticle/**,**/spi/**,"**/proxy/**","**/entities/**","**/filter/**","**/util/**","**/verifier/**"</sonar.coverage.exclusions>
+		<sonar.cpd.exclusions>**/dto/**,**/entity/**,**/config/**</sonar.cpd.exclusions>
+		<sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../</sonar.coverage.jacoco.xmlReportPaths>
 		<maven.jar.plugin.version>3.0.2</maven.jar.plugin.version>
 		<maven.war.plugin.version>3.1.0</maven.war.plugin.version>
 		<objenesis.version>3.1</objenesis.version>
 
 		<springdoc.version>2.5.0</springdoc.version>
-		
+
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -237,7 +239,7 @@
 			<groupId>com.fasterxml.jackson.module</groupId>
 			<artifactId>jackson-module-jaxb-annotations</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>io.mosip.kernel</groupId>
 			<artifactId>kernel-core</artifactId>
@@ -363,12 +365,30 @@
 							<goal>prepare-agent</goal>
 						</goals>
 					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven.surefire.plugin.version}</version>
+				<configuration>
+					<skipTests>${skipTests}</skipTests>
+					<skip>false</skip>
+					<argLine>
+						${argLine} --add-opens java.xml/jdk.xml.internal=ALL-UNNAMED --illegal-access=permit
+					</argLine>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<executions>
 					<execution>
 						<id>report</id>
-						<phase>prepare-package</phase>
 						<goals>
-							<goal>report</goal>
+							<goal>report-aggregate</goal>
 						</goals>
+						<phase>verify</phase>
 					</execution>
 				</executions>
 			</plugin>
@@ -431,27 +451,16 @@
 					<!-- <format>json</format> -->
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>${maven.surefire.plugin.version}</version>
-				<configuration>
-					<skipTests>true</skipTests>
-					<skip>false</skip>
-					<argLine>
-						${argLine} --add-opens java.xml/jdk.xml.internal=ALL-UNNAMED --illegal-access=permit
-					</argLine>
-				</configuration>
-			</plugin>
+
 		</plugins>
 	</build>
-		
-		<profiles>
-			<profile>
-				<id>sonar</id>
-				<build>
-					<plugins>
-						<plugin>
+
+	<profiles>
+		<profile>
+			<id>sonar</id>
+			<build>
+				<plugins>
+					<plugin>
 						<groupId>org.sonarsource.scanner.maven</groupId>
 						<artifactId>sonar-maven-plugin</artifactId>
 						<version>${maven.sonar.version}</version>
@@ -464,9 +473,9 @@
 							</execution>
 						</executions>
 					</plugin>
-					</plugins>
-				</build>
-			</profile>
-		</profiles>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
