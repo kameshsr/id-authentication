@@ -738,19 +738,31 @@ public class KycServiceImpl implements KycService {
 					continue;
 				}
 				if (nameBuffer.length() > 0) {
+					System.out.println("--------------------------------------nameBuffer---------------------------------------------------------");
+					System.out.println(nameBuffer.toString());
+					System.out.println("--------------------------------------nameBuffer---------------------------------------------------------");
 					nameBuffer.append(" ");
 				}
 				Map<String, String> mappedLangCodes = langCodeMapping(idInfoList);
+				System.out.println("--------------------------------------mappedLangCodes---------------------------------------------------------");
+				System.out.println(mappedLangCodes.toString());
+				System.out.println("--------------------------------------mappedLangCodes---------------------------------------------------------");
 				List<String> availableLangCodes = getAvailableLangCodes(mappedConsentedLocales, mappedLangCodes);
+				System.out.println("--------------------------------------availableLangCodes---------------------------------------------------------");
+				System.out.println(availableLangCodes.toString());
+				System.out.println("--------------------------------------availableLangCodes---------------------------------------------------------");
 				if (availableLangCodes.size() == 0) {
 					continue;
 				} 
+				System.out.println("--------------------------------------looping through idInfoList ---------------------------------------------------------");
 				for (IdentityInfoDTO identityInfo : idInfoList) {
 					String langCode = mappedLangCodes.get(availableLangCodes.get(0));
 					if (identityInfo.getLanguage().equalsIgnoreCase(langCode)) {
 						nameBuffer.append(identityInfo.getValue());
+						System.out.println("namebuffer    "+nameBuffer.toString());
 					}
 				}
+				System.out.println("--------------------------------------looped through idInfoList ---------------------------------------------------------");
 			}
 			if (nameBuffer.toString().trim().length() > 0)
 				respMap.put(consentedAttribute, nameBuffer.toString());
