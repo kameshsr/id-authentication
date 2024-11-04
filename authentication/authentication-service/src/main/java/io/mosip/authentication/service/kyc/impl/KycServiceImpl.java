@@ -379,10 +379,10 @@ public class KycServiceImpl implements KycService {
 		Map<String, List<IdentityInfoDTO>> identityInfos = null;
 		if (Objects.nonNull(allowedKycType)) {
 			identityInfo = identity.entrySet().stream().filter(id -> allowedKycType.contains(id.getKey()))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 		}
 		if (Objects.nonNull(identityInfo)) {
-			identityInfos = identityInfo.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry
+			identityInfos = identityInfo.entrySet().stream().collect(Collectors.toMap(Entry::getKey, entry -> entry
 					.getValue().stream()
 					.filter((IdentityInfoDTO info) -> Objects.isNull(info.getLanguage())
 							|| info.getLanguage().equalsIgnoreCase("null")
@@ -467,6 +467,7 @@ public class KycServiceImpl implements KycService {
 		respMap.put(IdAuthCommonConstants.SUBJECT, subject);
 		
 		for (String attrib : consentedAttributes) {
+			System.out.println("--------------------------------------looping through attributes---------------------------------------------------------");
 			if (attrib.equals(IdAuthCommonConstants.SUBJECT))
 				continue;
 			if (attrib.equals(consentedIndividualAttributeName)) {
@@ -475,9 +476,16 @@ public class KycServiceImpl implements KycService {
 			}
 			List<String> idSchemaAttribute = idInfoHelper.getIdentityAttributesForIdName(attrib);
 			if (mappedConsentedLocales.size() > 0) {
+				System.out.println("--------------------------------------attrib---------------------------------------------------------");
+				System.out.println(attrib);
+				System.out.println("--------------------------------------attrib---------------------------------------------------------");
 				addEntityForLangCodes(mappedConsentedLocales, idInfo, respMap, attrib, idSchemaAttribute);
 			}
 		}
+		System.out.println("--------------------------------------respMap---------------------------------------------------------");
+		System.out.println(respMap.toString());
+		System.out.println("--------------------------------------respMap---------------------------------------------------------");
+		
 
 		try {
 			String signedData = securityManager.signWithPayload(mapper.writeValueAsString(respMap));
@@ -674,9 +682,14 @@ public class KycServiceImpl implements KycService {
 			for (String consentedLocale: mappedConsentedLocales.keySet()) {
 				String consentedLocaleValue = mappedConsentedLocales.get(consentedLocale);
 				StringBuilder nameBuffer = new StringBuilder();
+				System.out.println("--------------------------------------idInfo---------------------------------------------------------");
+				System.out.println(idInfo.toString());
+				System.out.println("--------------------------------------idInfo---------------------------------------------------------");
 				for (String idSchemaAttribute : idSchemaAttributes) {
 					List<IdentityInfoDTO> idInfoList = idInfo.get(idSchemaAttribute);
-
+					System.out.println("--------------------------------------idInfoList---------------------------------------------------------");
+					System.out.println(idInfoList.toString());
+					System.out.println("--------------------------------------idInfoList---------------------------------------------------------");
 					if (Objects.isNull(idInfoList)) {
 						mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "addEntityForLangCodes",
 							"Data not available in Identity Info for the claim. So not adding to response claims. Claim Name: " + idSchemaAttribute);

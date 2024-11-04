@@ -425,7 +425,13 @@ public class KycFacadeImpl implements KycFacade {
 
 			Map<String, Object> idResDTO = idService.processIdType(idvIdType, idVid, isBioRequired,
 					IdAuthCommonConstants.KYC_EXCHANGE_CONSUME_VID_DEFAULT, policyAllowedAttributes);
+			System.out.println("--------------------------------------idResDTO---------------------------------------------------------");
+			System.out.println(idResDTO.toString());
+			System.out.println("--------------------------------------idResDTO---------------------------------------------------------");
 			Map<String, List<IdentityInfoDTO>> idInfo = IdInfoFetcher.getIdInfo(idResDTO);
+			System.out.println("--------------------------------------idInfo---------------------------------------------------------");
+			System.out.println(idInfo.toString());
+			System.out.println("--------------------------------------idInfo---------------------------------------------------------");
 			
 			String token = idService.getToken(idResDTO);
 			String psuToken = kycTokenData.getPsuToken();
@@ -437,6 +443,10 @@ public class KycFacadeImpl implements KycFacade {
 
 			String respJson = kycService.buildKycExchangeResponse(psuToken, idInfo, allowedConsentAttributes, locales, idVid, 
 														kycExchangeRequestDTO);
+			System.out.println("--------------------------------------respJson---------------------------------------------------------");
+			System.out.println(respJson.toString());
+			System.out.println("--------------------------------------respJson---------------------------------------------------------");
+			
 			// update kyc token status 
 			//KycTokenData kycTokenData = kycTokenDataOpt.get();
 			kycTokenData.setKycTokenStatus(KycTokenStatusType.PROCESSED.getStatus());
