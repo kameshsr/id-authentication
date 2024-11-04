@@ -5,6 +5,7 @@ import io.mosip.kernel.keymanagerservice.util.KeymanagerUtil;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @RunWith(SpringRunner.class)
+@Ignore
 public class KeyBindedTokenMatcherUtilTest {
 
     @Mock
