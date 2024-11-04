@@ -66,12 +66,12 @@ import io.mosip.kernel.core.util.DateUtils;
 
 @Service
 public class KycServiceImpl implements KycService {
-
+	
 	/** The Constant KYC_ATTRIB_LANGCODE_SEPERATOR. */
 	private static final String KYC_ATTRIB_LANGCODE_SEPERATOR = LANG_CODE_SEPARATOR;
 
 	/** The mosipLogger. */
-	private Logger mosipLogger = IdaLogger.getLogger(KycServiceImpl.class);
+	private Logger mosipLogger = IdaLogger.getLogger(KycServiceImpl.class);	
 
 	@Value("${ida.idp.consented.picture.attribute.name:picture}")
 	private String consentedFaceAttributeName;
@@ -93,7 +93,7 @@ public class KycServiceImpl implements KycService {
 
 	@Value("${ida.idp.consented.address.value.separator: }")
 	private String addressValueSeparator;
-
+	
 	@Value("${ida.kyc.send-face-as-cbeff-xml:false}")
 	private boolean sendFaceAsCbeffXml;
 
@@ -111,7 +111,7 @@ public class KycServiceImpl implements KycService {
 	/** The mapping config. */
 	@Autowired
 	private MappingConfig mappingConfig;
-
+	
 	/** The mapper. */
 	@Autowired
 	private ObjectMapper mapper;
@@ -121,7 +121,7 @@ public class KycServiceImpl implements KycService {
 
 	@Autowired
 	private KycTokenDataRepository kycTokenDataRepo;
-
+	
 	@Autowired
 	private CbeffUtil cbeffUtil;
 	/**
@@ -135,14 +135,14 @@ public class KycServiceImpl implements KycService {
 	 */
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see
 	 * io.mosip.authentication.core.spi.indauth.service.KycService#retrieveKycInfo(
 	 * java.lang.String, java.util.List, java.lang.String, java.util.Map)
 	 */
 	@Override
 	public EKycResponseDTO retrieveKycInfo(List<String> allowedkycAttributes, Set<String> langCodes,
-										   Map<String, List<IdentityInfoDTO>> identityInfo) throws IdAuthenticationBusinessException {
+			Map<String, List<IdentityInfoDTO>> identityInfo) throws IdAuthenticationBusinessException {
 		EKycResponseDTO kycResponseDTO = new EKycResponseDTO();
 		if (Objects.nonNull(identityInfo) && Objects.nonNull(allowedkycAttributes) && !allowedkycAttributes.isEmpty()) {
 			Optional<String> faceAttribute = IdInfoHelper.getKycAttributeHasPhoto(allowedkycAttributes);
@@ -152,7 +152,7 @@ public class KycServiceImpl implements KycService {
 				String faceCbeff = Objects.nonNull(faceEntityInfoMap)
 						? faceEntityInfoMap.get(CbeffDocType.FACE.getType().value())
 						: null;
-
+				
 				String face;
 				if(sendFaceAsCbeffXml) {
 					face = faceCbeff;
@@ -164,11 +164,11 @@ public class KycServiceImpl implements KycService {
 								String.format(IdAuthenticationErrorConstants.BIOMETRIC_MISSING.getErrorMessage(), CbeffDocType.FACE.getName()), e);
 					}
 				}
-				List<IdentityInfoDTO> bioValue = new ArrayList<>();
-				IdentityInfoDTO identityInfoDTO = new IdentityInfoDTO();
-				identityInfoDTO.setValue(face);
-				bioValue.add(identityInfoDTO);
-				identityInfo.put(faceAttribute.get(), bioValue);
+					List<IdentityInfoDTO> bioValue = new ArrayList<>();
+					IdentityInfoDTO identityInfoDTO = new IdentityInfoDTO();
+					identityInfoDTO.setValue(face);
+					bioValue.add(identityInfoDTO);
+					identityInfo.put(faceAttribute.get(), bioValue);
 			}
 
 			Map<String, List<IdentityInfoDTO>> filteredIdentityInfo = filterIdentityInfo(allowedkycAttributes,
@@ -192,7 +192,7 @@ public class KycServiceImpl implements KycService {
 	 * @throws IdAuthenticationBusinessException the id authentication business exception
 	 */
 	private void setKycInfo(List<String> allowedkycAttributes, EKycResponseDTO kycResponseDTO,
-							Map<String, List<IdentityInfoDTO>> filteredIdentityInfo, Set<String> langCodes) throws IdAuthenticationBusinessException {
+			Map<String, List<IdentityInfoDTO>> filteredIdentityInfo, Set<String> langCodes) throws IdAuthenticationBusinessException {
 		Map<String, Object> idMappingIdentityInfo = getKycInfo(allowedkycAttributes,
 				filteredIdentityInfo, langCodes);
 		try {
@@ -237,7 +237,7 @@ public class KycServiceImpl implements KycService {
 				}
 			}
 		}
-
+		
 		return idMappingIdentityInfo;
 	}
 
@@ -248,7 +248,7 @@ public class KycServiceImpl implements KycService {
 	}
 
 	private Map<String, Object> getMappedIdentityInfosForIdName(Map<String, List<IdentityInfoDTO>> filteredIdentityInfo,
-																Set<String> langCodes, String targetIdName) {
+			Set<String> langCodes, String targetIdName) {
 		// Getting allowed demographic data - key will be the ID Name (from ID Mapping),
 		// value will be the ID Entity value from ID Name
 		Map<String, Object> idMappingIdentityInfo = Stream.of(DemoMatchType.values())
@@ -257,12 +257,12 @@ public class KycServiceImpl implements KycService {
 						if(demoMatchType.equals(DemoMatchType.DYNAMIC)) {
 							Map<String, List<String>> dynamicAttributes = mappingConfig.getDynamicAttributes();
 							return dynamicAttributes.entrySet()
-									.stream()
-									.map(Entry::getKey)
-									.filter(idName -> idName.equalsIgnoreCase(targetIdName))
-									.flatMap(idName -> {
-										return getDynamicEntityInfoStream(filteredIdentityInfo, langCodes, idName);
-									});
+										.stream()
+										.map(Entry::getKey)
+										.filter(idName -> idName.equalsIgnoreCase(targetIdName))
+										.flatMap(idName -> {
+											return getDynamicEntityInfoStream(filteredIdentityInfo, langCodes, idName);
+										});
 						} else {
 							String idname = demoMatchType.getIdMapping().getIdname();
 							if(targetIdName.equalsIgnoreCase(idname)) {
@@ -286,7 +286,7 @@ public class KycServiceImpl implements KycService {
 										getEntityForMatchType(demoMatchType, filteredIdentityInfo)));
 							}
 						}
-
+						
 						return Stream.empty();
 					}
 				})
@@ -322,14 +322,14 @@ public class KycServiceImpl implements KycService {
 	 * @return the entity for lang codes
 	 */
 	private Stream<SimpleEntry<String, String>> getEntityForLangCodes(Map<String, List<IdentityInfoDTO>> filteredIdentityInfo,
-																	  Set<String> langCodes, DemoMatchType demoMatchType) {
+			Set<String> langCodes, DemoMatchType demoMatchType) {
 		return langCodes.stream()
 				.map(langCode -> new SimpleEntry<>(
 						demoMatchType.getIdMapping().getIdname() + KYC_ATTRIB_LANGCODE_SEPERATOR
 								+ langCode,
 						getEntityForMatchType(demoMatchType, filteredIdentityInfo, langCode)));
 	}
-
+	
 	/**
 	 * Gets the entity for match type.
 	 *
@@ -346,7 +346,7 @@ public class KycServiceImpl implements KycService {
 		}
 		return null;
 	}
-
+	
 	/**
 	 * Gets the entity for match type.
 	 *
@@ -364,7 +364,7 @@ public class KycServiceImpl implements KycService {
 		}
 		return null;
 	}
-
+	
 	/**
 	 * Construct identity info - Method to filter the details to be printed.
 	 *
@@ -374,7 +374,7 @@ public class KycServiceImpl implements KycService {
 	 * @return the map returns filtered information defined as per policy
 	 */
 	private Map<String, List<IdentityInfoDTO>> filterIdentityInfo(List<String> allowedKycType,
-																  Map<String, List<IdentityInfoDTO>> identity, Set<String> langCodes) {
+			Map<String, List<IdentityInfoDTO>> identity, Set<String> langCodes) {
 		Map<String, List<IdentityInfoDTO>> identityInfo = null;
 		Map<String, List<IdentityInfoDTO>> identityInfos = null;
 		if (Objects.nonNull(allowedKycType)) {
@@ -394,13 +394,13 @@ public class KycServiceImpl implements KycService {
 
 	// Taking tokenGenerationTime same as auth response time only as response time is generated based on local timezone.
 	@Override
-	public String generateAndSaveKycToken(String idHash, String authToken, String oidcClientId, String requestTime,
-										  String tokenGenerationTime, String reqTransactionId) throws IdAuthenticationBusinessException {
-
+	public String generateAndSaveKycToken(String idHash, String authToken, String oidcClientId, String requestTime, 
+				String tokenGenerationTime, String reqTransactionId) throws IdAuthenticationBusinessException {
+		
 		String uuid = UUID.randomUUID().toString();
 		LocalDateTime requestLocalDateTime = IdaRequestResponsConsumerUtil.convertStringDateTimeToLDT(requestTime);
 		LocalDateTime tokenIssuedDateTime = IdaRequestResponsConsumerUtil.convertStringDateTimeToLDT(tokenGenerationTime);
-
+		
 		String kycToken = generateKycToken(uuid, idHash);
 		KycTokenData kycTokenData = new KycTokenData();
 		kycTokenData.setKycTokenId(uuid);
@@ -416,7 +416,7 @@ public class KycServiceImpl implements KycService {
 		kycTokenData.setCrDTimes(DateUtils.getUTCCurrentDateTime());
 		kycTokenDataRepo.saveAndFlush(kycTokenData);
 		mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "generateAndSaveKycToken",
-				"KYC Token Generated & Saved.");
+					"KYC Token Generated & Saved.");
 		return kycToken;
 	}
 
@@ -440,9 +440,9 @@ public class KycServiceImpl implements KycService {
 	@Override
 	public boolean isKycTokenExpire(LocalDateTime tokenIssuedDateTime, String kycToken) throws IdAuthenticationBusinessException {
 		LocalDateTime currentTime = LocalDateTime.now();
-
+		
 		long diffSeconds = ChronoUnit.SECONDS.between(tokenIssuedDateTime, currentTime);
-
+		
 		long adjustmentSeconds = EnvUtil.getKycTokenExpireTimeAdjustmentSeconds();
 		ValueRange valueRange = ValueRange.of(0, adjustmentSeconds);
 
@@ -454,18 +454,18 @@ public class KycServiceImpl implements KycService {
 
 
 	@Override
-	public String buildKycExchangeResponse(String subject, Map<String, List<IdentityInfoDTO>> idInfo,
-										   List<String> consentedAttributes, List<String> consentedLocales, String idVid, KycExchangeRequestDTO kycExchangeRequestDTO) throws IdAuthenticationBusinessException {
-
+	public String buildKycExchangeResponse(String subject, Map<String, List<IdentityInfoDTO>> idInfo, 
+				List<String> consentedAttributes, List<String> consentedLocales, String idVid, KycExchangeRequestDTO kycExchangeRequestDTO) throws IdAuthenticationBusinessException {
+		
 		mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "buildKycExchangeResponse",
-				"Building claims response for PSU token: " + subject);
-
+					"Building claims response for PSU token: " + subject);
+					
 		Map<String, Object> respMap = new HashMap<>();
 		Set<String> uniqueConsentedLocales = new HashSet<String>(consentedLocales);
 		Map<String, String> mappedConsentedLocales = localesMapping(uniqueConsentedLocales);
 
 		respMap.put(IdAuthCommonConstants.SUBJECT, subject);
-
+		
 		for (String attrib : consentedAttributes) {
 			System.out.println("--------------------------------------looping through attributes---------------------------------------------------------");
 			if (attrib.equals(IdAuthCommonConstants.SUBJECT))
@@ -485,7 +485,7 @@ public class KycServiceImpl implements KycService {
 		System.out.println("--------------------------------------respMap---------------------------------------------------------");
 		System.out.println(respMap.toString());
 		System.out.println("--------------------------------------respMap---------------------------------------------------------");
-
+		
 
 		try {
 			String signedData = securityManager.signWithPayload(mapper.writeValueAsString(respMap));
@@ -500,17 +500,17 @@ public class KycServiceImpl implements KycService {
 		}
 	}
 
-	private void addEntityForLangCodes(Map<String, String> mappedConsentedLocales, Map<String, List<IdentityInfoDTO>> idInfo,
-									   Map<String, Object> respMap, String consentedAttribute, List<String> idSchemaAttributes)
-			throws IdAuthenticationBusinessException {
-
+	private void addEntityForLangCodes(Map<String, String> mappedConsentedLocales, Map<String, List<IdentityInfoDTO>> idInfo, 
+				Map<String, Object> respMap, String consentedAttribute, List<String> idSchemaAttributes) 
+				throws IdAuthenticationBusinessException {
+		
 		if (consentedAttribute.equals(consentedFaceAttributeName)) {
 			System.out.println("--------------------------------------Consentedattrib---------------------------------------------------------");
 			System.out.println(consentedAttribute);
 			System.out.println("--------------------------------------Consentedattrib---------------------------------------------------------");
 			if (!idInfo.keySet().contains(BioMatchType.FACE.getIdMapping().getIdname())) {
 				mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "addEntityForLangCodes",
-						"Face Bio not found in DB. So not adding to response claims.");
+					"Face Bio not found in DB. So not adding to response claims.");
 				return;
 			}
 			Map<String, String> faceEntityInfoMap = idInfoHelper.getIdEntityInfoMap(BioMatchType.FACE, idInfo, null);
@@ -524,7 +524,7 @@ public class KycServiceImpl implements KycService {
 					mosipLogger.error(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "",
 							"Error Adding photo to the claims. " + e.getMessage(), e);
 				}
-
+				
 			}
 			return;
 		}
@@ -536,7 +536,7 @@ public class KycServiceImpl implements KycService {
 			List<IdentityInfoDTO> idInfoList = idInfo.get(idSchemaAttributes.get(0));
 			if (Objects.isNull(idInfoList)) {
 				mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "addEntityForLangCodes",
-						"Data not available in Identity Info for the claim. So not adding to response claims. Claim Name: " + idSchemaAttributes.get(0));
+					"Data not available in Identity Info for the claim. So not adding to response claims. Claim Name: " + idSchemaAttributes.get(0));
 				return;
 			}
 			Map<String, String> mappedLangCodes = langCodeMapping(idInfoList);
@@ -554,7 +554,7 @@ public class KycServiceImpl implements KycService {
 						for (String availableLangCode : availableLangCodes) {
 							String langCode = mappedLangCodes.get(availableLangCode);
 							if (identityInfo.getLanguage().equalsIgnoreCase(langCode)) {
-								respMap.put(consentedAttribute + IdAuthCommonConstants.CLAIMS_LANG_SEPERATOR + availableLangCode,
+								respMap.put(consentedAttribute + IdAuthCommonConstants.CLAIMS_LANG_SEPERATOR + availableLangCode, 
 										identityInfo.getValue());
 							}
 						}
@@ -577,11 +577,11 @@ public class KycServiceImpl implements KycService {
 						if (addressSubsetAttributes.length == 0) {
 							mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "addEntityForLangCodes",
 									"No address subset attributes configured. Will return the address with formatted attribute.");
-							addFormattedAddress(idSchemaAttributes, idInfo, consentedLocaleValue, respMap, true,
-									IdAuthCommonConstants.CLAIMS_LANG_SEPERATOR + consentedLocaleValue);
+							addFormattedAddress(idSchemaAttributes, idInfo, consentedLocaleValue, respMap, true, 
+								IdAuthCommonConstants.CLAIMS_LANG_SEPERATOR + consentedLocaleValue);
 							continue;
 						}
-						addAddressClaim(addressSubsetAttributes, idInfo, consentedLocaleValue, respMap, true,
+						addAddressClaim(addressSubsetAttributes, idInfo, consentedLocaleValue, respMap, true, 
 								IdAuthCommonConstants.CLAIMS_LANG_SEPERATOR + consentedLocaleValue);
 					}
 				} else {
@@ -593,18 +593,18 @@ public class KycServiceImpl implements KycService {
 						addFormattedAddress(idSchemaAttributes, idInfo, consentedLocaleValue, respMap, false, "");
 						return;
 					}
-
+					
 					addAddressClaim(addressSubsetAttributes, idInfo, consentedLocaleValue, respMap, false, "");
 				}
 			}
 		}
 	}
 
-	private void addFormattedAddress(List<String> idSchemaAttributes, Map<String, List<IdentityInfoDTO>> idInfo, String localeValue,
-									 Map<String, Object> respMap, boolean addLocale, String localeAppendValue) throws IdAuthenticationBusinessException {
+	private void addFormattedAddress(List<String> idSchemaAttributes, Map<String, List<IdentityInfoDTO>> idInfo, String localeValue, 
+								Map<String, Object> respMap, boolean addLocale, String localeAppendValue) throws IdAuthenticationBusinessException {
 		boolean langCodeFound = false;
 		Map<String, String> addressMap = new HashMap<>();
-		StringBuilder identityInfoValue = new StringBuilder();
+		StringBuilder identityInfoValue = new StringBuilder(); 
 		for (String schemaAttrib: idSchemaAttributes) {
 			List<String> idSchemaSubsetAttributes = idInfoHelper.getIdentityAttributesForIdName(schemaAttrib);
 			for (String idSchemaAttribute : idSchemaSubsetAttributes) {
@@ -615,7 +615,7 @@ public class KycServiceImpl implements KycService {
 				}
 				if (mappedLangCodes.keySet().contains(localeValue)) {
 					String langCode = mappedLangCodes.get(localeValue);
-					for (IdentityInfoDTO identityInfo : idInfoList) {
+					for (IdentityInfoDTO identityInfo : idInfoList) { 
 						if (identityInfoValue.length() > 0) {
 							identityInfoValue.append(addressValueSeparator);
 						}
@@ -631,7 +631,7 @@ public class KycServiceImpl implements KycService {
 				}
 			}
 		}
-		if (identityInfoValue.toString().trim().length() == 0)
+		if (identityInfoValue.toString().trim().length() == 0) 
 			return;
 		//String identityInfoValueStr = identityInfoValue.toString();
 		//String trimmedValue = identityInfoValueStr.substring(0, identityInfoValueStr.lastIndexOf(addressValueSeparator));
@@ -643,12 +643,12 @@ public class KycServiceImpl implements KycService {
 	}
 
 	private void addAddressClaim(String[] addressAttributes, Map<String, List<IdentityInfoDTO>> idInfo, String consentedLocaleValue,
-								 Map<String, Object> respMap, boolean addLocale, String localeAppendValue) throws IdAuthenticationBusinessException {
+			Map<String, Object> respMap, boolean addLocale, String localeAppendValue) throws IdAuthenticationBusinessException {
 		boolean langCodeFound = false; //added for language data not available in identity info (Eg: fr)
 		Map<String, String> addressMap = new HashMap<>();
 		for (String addressAttribute : addressAttributes) {
 			List<String> idSchemaSubsetAttributes = idInfoHelper.getIdentityAttributesForIdName(addressAttribute);
-			StringBuilder identityInfoValue = new StringBuilder();
+			StringBuilder identityInfoValue = new StringBuilder(); 
 			for (String idSchemaAttribute : idSchemaSubsetAttributes) {
 				List<IdentityInfoDTO> idInfoList = idInfo.get(idSchemaAttribute);
 				Map<String, String> mappedLangCodes = langCodeMapping(idInfoList);
@@ -676,17 +676,17 @@ public class KycServiceImpl implements KycService {
 			if (identityInfoValue.toString().trim().length() > 0)
 				addressMap.put(addressAttribute + localeAppendValue, identityInfoValue.toString());
 		}
-		if (addressMap.size() == 0)
+		if (addressMap.size() == 0) 
 			return;
 
 		if (langCodeFound && addLocale)
 			respMap.put(consentedAddressAttributeName + localeAppendValue, addressMap);
-		else
+		else 
 			respMap.put(consentedAddressAttributeName, addressMap);
 	}
 
-	private void addNameClaim(Map<String, String> mappedConsentedLocales, Map<String, List<IdentityInfoDTO>> idInfo,
-							  Map<String, Object> respMap, String consentedAttribute, List<String> idSchemaAttributes) throws IdAuthenticationBusinessException{
+	private void addNameClaim(Map<String, String> mappedConsentedLocales, Map<String, List<IdentityInfoDTO>> idInfo, 
+				Map<String, Object> respMap, String consentedAttribute, List<String> idSchemaAttributes) throws IdAuthenticationBusinessException{
 		if(mappedConsentedLocales.size() > 1) {
 			for (String consentedLocale: mappedConsentedLocales.keySet()) {
 				String consentedLocaleValue = mappedConsentedLocales.get(consentedLocale);
@@ -701,7 +701,7 @@ public class KycServiceImpl implements KycService {
 					System.out.println("--------------------------------------idInfoList---------------------------------------------------------");
 					if (Objects.isNull(idInfoList)) {
 						mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "addEntityForLangCodes",
-								"Data not available in Identity Info for the claim. So not adding to response claims. Claim Name: " + idSchemaAttribute);
+							"Data not available in Identity Info for the claim. So not adding to response claims. Claim Name: " + idSchemaAttribute);
 						continue;
 					}
 					if (nameBuffer.length() > 0) {
@@ -724,11 +724,17 @@ public class KycServiceImpl implements KycService {
 		} else {
 			StringBuilder nameBuffer = new StringBuilder();
 			for (String idSchemaAttribute : idSchemaAttributes) {
+				System.out.println("--------------------------------------idSchemaAttribute---------------------------------------------------------");
+				System.out.println(idSchemaAttribute);
+				System.out.println("--------------------------------------idSchemaAttribute---------------------------------------------------------");
+				System.out.println("--------------------------------------idInfoIdSchemaAttribute---------------------------------------------------------");
+				System.out.println(idInfo.get(idSchemaAttribute).toString());
+				System.out.println("--------------------------------------idInfoIdSchemaAttribute---------------------------------------------------------");
 				List<IdentityInfoDTO> idInfoList = idInfo.get(idSchemaAttribute);
 
 				if (Objects.isNull(idInfoList)) {
 					mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "addEntityForLangCodes",
-							"Data not available in Identity Info for the claim. So not adding to response claims. Claim Name: " + idSchemaAttribute);
+						"Data not available in Identity Info for the claim. So not adding to response claims. Claim Name: " + idSchemaAttribute);
 					continue;
 				}
 				if (nameBuffer.length() > 0) {
@@ -738,7 +744,7 @@ public class KycServiceImpl implements KycService {
 				List<String> availableLangCodes = getAvailableLangCodes(mappedConsentedLocales, mappedLangCodes);
 				if (availableLangCodes.size() == 0) {
 					continue;
-				}
+				} 
 				for (IdentityInfoDTO identityInfo : idInfoList) {
 					String langCode = mappedLangCodes.get(availableLangCodes.get(0));
 					if (identityInfo.getLanguage().equalsIgnoreCase(langCode)) {
@@ -799,7 +805,7 @@ public class KycServiceImpl implements KycService {
 		}
 		return availableLangCodes;
 	}
-
+	
 	private String getFaceBDB(String faceCbeff) throws Exception {
 		List<BIR> birDataFromXMLType = cbeffUtil.getBIRDataFromXMLType(faceCbeff.getBytes(), CbeffDocType.FACE.getName());
 		if(birDataFromXMLType.isEmpty()) {
