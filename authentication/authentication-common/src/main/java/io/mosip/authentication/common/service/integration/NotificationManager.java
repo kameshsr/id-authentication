@@ -80,6 +80,10 @@ public class NotificationManager {
 			mailRequestDto.add("mailContent", mailContent);
 			mailRequestDto.add("mailSubject", mailSubject);
 			mailRequestDto.add("mailTo", emailId);
+			System.out.println("Mail Request DTO: " + mailRequestDto.toString());
+			System.out.println("mailContent: " + mailContent);
+			System.out.println("mailSubject: " + mailSubject);
+			System.out.println("emailId: " + emailId);
 			restRequestDTO = restRequestFactory.buildRequest(RestServicesConstants.MAIL_NOTIFICATION_SERVICE,
 					mailRequestDto, String.class);
 			restHelper.requestAsync(restRequestDTO);
