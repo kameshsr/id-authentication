@@ -1,5 +1,5 @@
-[![Maven Package upon a push](https://github.com/mosip/id-authentication/actions/workflows/push_trigger.yml/badge.svg?branch=release-1.2.0.1)](https://github.com/mosip/id-authentication/actions/workflows/push_trigger.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mosip_id-authentication&id=mosip_id-authentication&branch=release-1.2.0.1&metric=alert_status)](https://sonarcloud.io/dashboard?id=mosip_id-authentication&branch=release-1.2.0.1)
+[![Maven Package upon a push](https://github.com/mosip/id-authentication/actions/workflows/push-trigger.yml/badge.svg?branch=master)](https://github.com/mosip/id-authentication/actions/workflows/push-trigger.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mosip_id-authentication&id=mosip_id-authentication&branch=master&metric=alert_status)](https://sonarcloud.io/dashboard?id=mosip_id-authentication&branch=master)
 
 # ID-Authentication
 
@@ -13,7 +13,7 @@ Refer to [SQL scripts](db_scripts).
 The project requires JDK 1.11. 
 1. Build and install:
     ```
-    $ cd kernel
+    $ cd authentication
     $ mvn install -DskipTests=true -Dmaven.javadoc.skip=true -Dgpg.skip=true
     ```
 1. Build Docker for a service:
