@@ -3,8 +3,9 @@ package io.mosip.authentication.otp.service.controller;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -14,7 +15,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.WebDataBinder;
@@ -27,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.mosip.authentication.common.service.builder.AuthTransactionBuilder;
 import io.mosip.authentication.common.service.helper.AuditHelper;
 import io.mosip.authentication.common.service.helper.AuthTransactionHelper;
+import io.mosip.authentication.common.service.kafka.impl.AuthenticationErrorEventingPublisher;
 import io.mosip.authentication.common.service.transaction.manager.IdAuthSecurityManager;
 import io.mosip.authentication.common.service.util.IdaRequestResponsConsumerUtil;
 import io.mosip.authentication.common.service.validator.OTPRequestValidator;
@@ -53,6 +58,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import springfox.documentation.annotations.ApiIgnore;
+import static io.mosip.authentication.core.constant.IdAuthConfigKeyConstants.AUTHENTICATION_ERROR_EVENTING_ENABLED;
 
 /**
  * The {@code OTPAuthController} use to send request to generate otp.
@@ -90,10 +96,25 @@ public class OTPController {
 
 	@Autowired
 	private IdAuthSecurityManager securityManager;
+	
+	@Autowired(required = false)
+	private AuthenticationErrorEventingPublisher authenticationErrorEventingPublisher;
+	
+	@Value("${"+ AUTHENTICATION_ERROR_EVENTING_ENABLED +":false}")
+	private boolean isEventingEnabled;
 
 	@InitBinder
 	private void initBinder(WebDataBinder binder) {
 		binder.setValidator(otpRequestValidator);
+	}
+	
+	@PostConstruct
+	public void init() {
+		if (isEventingEnabled) {
+			if (Objects.isNull(authenticationErrorEventingPublisher)) {
+				throw new BeanCreationException(AuthenticationErrorEventingPublisher.class.getName(), "Failed to create a bean");
+			}
+		}
 	}
 
 	/**
@@ -130,11 +151,15 @@ public class OTPController {
 			Optional<PartnerDTO> partner = partnerService.getPartner(partnerId, otpRequestDto.getMetadata());
 			AuthTransactionBuilder authTxnBuilder = authTransactionHelper
 					.createAndSetAuthTxnBuilderMetadataToRequest(otpRequestDto, !isPartnerReq, partner);
-			String idvidHash = securityManager.hash(otpRequestDto.getIndividualId());
+			logger.info("inside ida otp service");
+			logger.info("signature- "+request.getHeader("signature"));
 			try {
 				String idType = Objects.nonNull(otpRequestDto.getIndividualIdType()) ? otpRequestDto.getIndividualIdType()
 						: idTypeUtil.getIdType(otpRequestDto.getIndividualId()).getType();
+				logger.debug(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), GENERATE_OTP,
+						"IdType...."+ idType);
 				otpRequestDto.setIndividualIdType(idType);
+				String idvidHash = securityManager.hash(otpRequestDto.getIndividualId());
 				otpRequestValidator.validateIdvId(otpRequestDto.getIndividualId(), idType, errors, IdAuthCommonConstants.IDV_ID);
 				DataValidationUtil.validate(errors);
 				OtpResponseDTO otpResponseDTO = otpService.generateOtp(otpRequestDto, partnerId, requestWithMetadata);
@@ -142,20 +167,27 @@ public class OTPController {
 						otpResponseDTO.getResponseTime());
 				
 				boolean status = otpResponseDTO.getErrors() == null || otpResponseDTO.getErrors().isEmpty();
-				auditHelper.audit(AuditModules.OTP_REQUEST, AuditEvents.OTP_TRIGGER_REQUEST_RESPONSE, idvidHash,
+				auditHelper.audit(AuditModules.OTP_REQUEST, AuditEvents.OTP_TRIGGER_REQUEST_RESPONSE, otpRequestDto.getTransactionID(),
 						IdType.getIDTypeOrDefault(otpRequestDto.getIndividualIdType()), "otpRequest status : " + status);
 				return otpResponseDTO;
 			} catch (IDDataValidationException e) {
 				logger.error(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), GENERATE_OTP,
 						e.getErrorText());
-				auditHelper.audit(AuditModules.OTP_REQUEST,  AuditEvents.OTP_TRIGGER_REQUEST_RESPONSE , idvidHash,
+				auditHelper.audit(AuditModules.OTP_REQUEST,  AuditEvents.OTP_TRIGGER_REQUEST_RESPONSE , otpRequestDto.getTransactionID(),
 						IdType.getIDTypeOrDefault(otpRequestDto.getIndividualIdType()), e);
 				IdaRequestResponsConsumerUtil.setIdVersionToObjectWithMetadata(requestWithMetadata, e);
 				e.putMetadata(IdAuthCommonConstants.TRANSACTION_ID, otpRequestDto.getTransactionID());
 				throw authTransactionHelper.createDataValidationException(authTxnBuilder, e, requestWithMetadata);
 			} catch (IdAuthenticationBusinessException e) {
 				logger.error(IdAuthCommonConstants.SESSION_ID, e.getClass().toString(), e.getErrorCode(), e.getErrorText());
-				auditHelper.audit(AuditModules.OTP_REQUEST,  AuditEvents.OTP_TRIGGER_REQUEST_RESPONSE , idvidHash,
+				
+				if (isEventingEnabled) {
+					if (IdAuthenticationErrorConstants.ID_NOT_AVAILABLE.getErrorCode().equals(e.getErrorCode())) {
+						authenticationErrorEventingPublisher.notify(otpRequestDto, request.getHeader("signature"),
+								partner, e, otpRequestDto.getMetadata());
+					}
+				}
+				auditHelper.audit(AuditModules.OTP_REQUEST,  AuditEvents.OTP_TRIGGER_REQUEST_RESPONSE , otpRequestDto.getTransactionID(),
 						IdType.getIDTypeOrDefault(otpRequestDto.getIndividualIdType()), e);
 				authTransactionHelper.setAuthTransactionEntityMetadata(requestWithMetadata, authTxnBuilder);
 				IdaRequestResponsConsumerUtil.setIdVersionToObjectWithMetadata(requestWithMetadata, e);

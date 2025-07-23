@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 import io.mosip.authentication.common.service.factory.IDAMappingFactory;
+import io.mosip.authentication.core.indauth.dto.KeyBindedTokenDTO;
 import io.mosip.authentication.core.spi.indauth.match.MappingConfig;
 import lombok.Data;
 
@@ -126,4 +127,6 @@ public class IDAMappingConfig implements MappingConfig {
 	/** The dynamic attributes. */
 	private Map<String, List<String>> dynamicAttributes;
 
+	/** The password. */
+	private List<String> password;
 }

@@ -27,7 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
+import io.mosip.authentication.common.service.util.EntityInfoUtil;
+import jakarta.annotation.PostConstruct;
 
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +90,9 @@ public class VciServiceImpl implements VciService {
 		OBJECT_MAPPER.registerModule(new AfterburnerModule());
 	}
 
+	@Value("${ida.idp.consented.individual_id.attribute.name:individual_id}")
+	private String consentedIndividualAttributeName;
+
 	@Value("${mosip.ida.config.server.file.storage.uri:}")
 	private String configServerFileStorageUrl;
 	
@@ -135,6 +139,9 @@ public class VciServiceImpl implements VciService {
 
 	@Autowired
 	private CbeffUtil cbeffUtil;
+
+	@Autowired
+	private EntityInfoUtil entityInfoUtil;
 
 	@PostConstruct
 	private void init() throws IdAuthenticationBusinessException {
@@ -294,12 +301,11 @@ public class VciServiceImpl implements VciService {
 				List<String> locales, Set<String> allowedAttributes, VciExchangeRequestDTO vciExchangeRequestDTO, 
 				String psuToken) throws IdAuthenticationBusinessException {
 
-		Map<String, Object> credSubjectMap = getCredSubjectMap(credSubjectId, idInfo, locales, allowedAttributes);
+		Map<String, Object> credSubjectMap = getCredSubjectMap(credSubjectId, idInfo, locales, allowedAttributes, vciExchangeRequestDTO);
 		try {
 			Map<String, Object> verCredJsonObject = new HashMap<>();
 
 			// @Context
-			
 			Object contextObj = vcContextJsonld.get("context"); 
 			verCredJsonObject.put(IdAuthCommonConstants.VC_AT_CONTEXT, contextObj);
 
@@ -307,7 +313,8 @@ public class VciServiceImpl implements VciService {
 			verCredJsonObject.put(IdAuthCommonConstants.VC_TYPE, vciExchangeRequestDTO.getCredentialsDefinition().getType());
 
 			// vc id
-			verCredJsonObject.put(IdAuthCommonConstants.VC_ID, verCredIdUrl + psuToken);
+			String vcId = UUID.randomUUID().toString();
+			verCredJsonObject.put(IdAuthCommonConstants.VC_ID, verCredIdUrl + vcId);
 
 			// vc issuer
 			verCredJsonObject.put(IdAuthCommonConstants.VC_ISSUER, verCredIssuer);
@@ -339,6 +346,9 @@ public class VciServiceImpl implements VciService {
 			byte[] vcSignBytes = canonicalizer.canonicalize(vcLdProof, vcJsonLdObject);			
 			String vcEncodedData = CryptoUtil.encodeBase64Url(vcSignBytes);
 
+			mosipLogger.debug(IdAuthCommonConstants.SESSION_ID, this.getClass().getCanonicalName(), "generateLdpVc",
+							"Hash value for the generated VC: " + vcEncodedData);
+
 			String jws = securityManager.jwsSignWithPayload(vcEncodedData);
 
 			LdProof ldProofWithJWS = LdProof.builder()
@@ -361,15 +371,20 @@ public class VciServiceImpl implements VciService {
 	}
 
 	private Map<String, Object> getCredSubjectMap(String credSubjectId, Map<String, List<IdentityInfoDTO>> idInfo, 
-				List<String> locales, Set<String> allowedAttributes) throws IdAuthenticationBusinessException {
+				List<String> locales, Set<String> allowedAttributes, VciExchangeRequestDTO vciExchangeRequestDTO) 
+				throws IdAuthenticationBusinessException {
 		Map<String, Object> credSubjectMap = new HashMap<>();
 			
 		credSubjectMap.put(IdAuthCommonConstants.VC_ID, credSubjectId);
-		
+
 		for (String attrib : allowedAttributes) {
-			List<String> idSchemaAttributes = idInfoHelper.getIdentityAttributesForIdName(attrib);
+			if (consentedIndividualAttributeName.equals(attrib)) {
+				credSubjectMap.put(vciExchangeRequestDTO.getIndividualIdType(), vciExchangeRequestDTO.getIndividualId());
+				continue;
+			}
+			
 			if (attrib.equalsIgnoreCase(BiometricType.FACE.value())) {
-				Map<String, String> faceEntityInfoMap = idInfoHelper.getIdEntityInfoMap(BioMatchType.FACE, idInfo, null);
+				Map<String, String> faceEntityInfoMap = entityInfoUtil.getIdEntityInfoMap(BioMatchType.FACE, idInfo, null);
 				if (Objects.nonNull(faceEntityInfoMap)) {
 					try {
 						String face = convertJP2ToJpeg(getFaceBDB(faceEntityInfoMap.get(CbeffDocType.FACE.getType().value())));
@@ -382,32 +397,49 @@ public class VciServiceImpl implements VciService {
 					}
 					
 				}
+				continue;
 			}
+			List<String> idSchemaAttributes = idInfoHelper.getIdentityAttributesForIdName(attrib);
 			for (String idSchemaAttribute : idSchemaAttributes) {
 				List<IdentityInfoDTO> idInfoList = idInfo.get(idSchemaAttribute);
 				if (Objects.isNull(idInfoList))
 					continue;
 				if (idInfoList.size() == 1) {
 					IdentityInfoDTO identityInfo = idInfoList.get(0);
-					if (Objects.isNull(identityInfo.getLanguage()))
-						credSubjectMap.put(idSchemaAttribute, idInfoList.get(0).getValue());
+					if (Objects.isNull(identityInfo.getLanguage())) {
+						String value = identityInfo.getValue();
+						if (Objects.nonNull(value) && (value.trim().length() > 0))
+							credSubjectMap.put(idSchemaAttribute, value);
+					}
 					else {
 						Map<String, String> valueMap = new HashMap<>();
-						valueMap.put(IdAuthCommonConstants.LANGUAGE_STRING, identityInfo.getLanguage());
-						valueMap.put(IdAuthCommonConstants.VALUE_STRING, identityInfo.getValue());
-						credSubjectMap.put(idSchemaAttribute, valueMap);
+						String lang = identityInfo.getLanguage();
+						if (locales.contains(lang)) {
+							String value = identityInfo.getValue();
+							if (Objects.nonNull(value) && (value.trim().length() > 0)) {
+								valueMap.put(IdAuthCommonConstants.LANGUAGE_STRING, lang);
+								valueMap.put(IdAuthCommonConstants.VALUE_STRING, value);
+								credSubjectMap.put(idSchemaAttribute, valueMap);
+							}
+						}
 					}
 					continue;
 				}
 				List<Map<String, String>> valueList = new ArrayList<>();
 				for (IdentityInfoDTO identityInfo : idInfoList) {
 					Map<String, String> valueMap = new HashMap<>();
-					valueMap.put(IdAuthCommonConstants.LANGUAGE_STRING, identityInfo.getLanguage());
-					valueMap.put(IdAuthCommonConstants.VALUE_STRING, identityInfo.getValue());
-					credSubjectMap.put(idSchemaAttribute, valueMap);
-					valueList.add(valueMap);
+					String lang = identityInfo.getLanguage();
+					if (locales.contains(lang)) {
+						String value = identityInfo.getValue();
+						if (Objects.nonNull(value) && (value.trim().length() > 0)) {
+							valueMap.put(IdAuthCommonConstants.LANGUAGE_STRING, identityInfo.getLanguage());
+							valueMap.put(IdAuthCommonConstants.VALUE_STRING, identityInfo.getValue());
+							valueList.add(valueMap);
+						}
+					}
 				}
-				credSubjectMap.put(idSchemaAttribute, valueList);
+				if (valueList.size() > 0)
+					credSubjectMap.put(idSchemaAttribute, valueList);
 			}
 		}
 		return credSubjectMap;

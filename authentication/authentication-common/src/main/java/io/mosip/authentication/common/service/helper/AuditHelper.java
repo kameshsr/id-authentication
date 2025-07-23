@@ -28,7 +28,6 @@ import io.mosip.authentication.core.indauth.dto.AuthRequestDTO;
 import io.mosip.authentication.core.indauth.dto.BioIdentityInfoDTO;
 import io.mosip.authentication.core.indauth.dto.IdType;
 import io.mosip.idrepository.core.dto.RestRequestDTO;
-import io.mosip.idrepository.core.helper.RestHelper;
 import io.mosip.kernel.core.http.RequestWrapper;
 
 /**
@@ -135,7 +134,7 @@ public class AuditHelper {
 			IdAuthenticationBaseException e) throws IDDataValidationException {
 		List<AuditModules> auditModules = getAuditModules(authRequestDTO);
 		for (AuditModules auditModule : auditModules) {
-			audit(auditModule, authAuditEvent, authRequestDTO.getIndividualId(), authRequestDTO.getIndividualIdType(),
+			audit(auditModule, authAuditEvent, authRequestDTO.getTransactionID(), authRequestDTO.getIndividualIdType(),
 					e);
 		}
 	}
@@ -144,7 +143,7 @@ public class AuditHelper {
 			String status) throws IDDataValidationException {
 		List<AuditModules> auditModules = getAuditModules(authRequestDTO);
 		for (AuditModules auditModule : auditModules) {
-			audit(auditModule, authAuditEvent, authRequestDTO.getIndividualId(), authRequestDTO.getIndividualIdType(),
+			audit(auditModule, authAuditEvent, authRequestDTO.getTransactionID(), authRequestDTO.getIndividualIdType(),
 					status);
 		}
 	}
@@ -181,6 +180,14 @@ public class AuditHelper {
 					auditModules.add(AuditModules.FACE_AUTH);
 				}
 			}
+		}
+
+		if (AuthTypeUtil.isKeyBindedToken(authRequestDTO)) {
+			auditModules.add(AuditModules.TOKEN_AUTH);
+		}
+
+		if (AuthTypeUtil.isPassword(authRequestDTO)) {
+			auditModules.add(AuditModules.PASSWORD_AUTH);
 		}
 		return auditModules;
 	}

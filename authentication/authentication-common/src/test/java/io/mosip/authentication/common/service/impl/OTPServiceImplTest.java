@@ -9,7 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.mosip.authentication.common.service.helper.IdentityAttributesForMatchTypeHelper;
+import io.mosip.authentication.common.service.util.EntityInfoUtil;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -58,7 +62,7 @@ import io.mosip.authentication.core.spi.partner.service.PartnerService;
 import io.mosip.idrepository.core.constant.IdRepoErrorConstants;
 import io.mosip.idrepository.core.dto.RestRequestDTO;
 import io.mosip.idrepository.core.exception.RestServiceException;
-import io.mosip.idrepository.core.helper.RestHelper;
+import io.mosip.authentication.common.service.helper.RestHelper;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.ResponseWrapper;
 
@@ -129,6 +133,9 @@ public class OTPServiceImplTest {
     private IdaUinHashSaltRepo uinHashSaltRepo;
 
     @Mock
+    private IdentityAttributesForMatchTypeHelper identityAttributesForMatchTypeHelper;
+
+    @Mock
     private IdAuthSecurityManager idAuthSecurityManager;
 
     @Mock
@@ -142,9 +149,15 @@ public class OTPServiceImplTest {
     @Mock
 	private AuthLockRepository authLockRepository;
 
+    @InjectMocks
+    private EntityInfoUtil entityInfoUtil;
+
+    @Mock
+    private EntityInfoUtil entityInfoUtilMock;
+
 
     @Before
-    public void before() {
+    public void before() throws IdAuthenticationBusinessException {
         ReflectionTestUtils.setField(otpServiceImpl, "env", env);
         ReflectionTestUtils.setField(otpServiceImpl, "uinHashSaltRepo", uinHashSaltRepo);
         ReflectionTestUtils.setField(otpServiceImpl, "securityManager", idAuthSecurityManager);
@@ -153,7 +166,6 @@ public class OTPServiceImplTest {
         ReflectionTestUtils.setField(otpServiceImpl, "idInfoFetcher", idInfoFetcherImpl);
         ReflectionTestUtils.setField(idInfoHelper, "env", env);
         ReflectionTestUtils.setField(idInfoHelper, "idMappingConfig", idMappingConfig);
-        ReflectionTestUtils.setField(idInfoHelper, "idInfoFetcher", idInfoFetcherImpl);
         ReflectionTestUtils.setField(idInfoFetcherImpl, "environment", env);
         ReflectionTestUtils.setField(otpServiceImpl, "idAuthService", idAuthService);
         ReflectionTestUtils.setField(otpServiceImpl, "partnerService", partnerService);
@@ -208,30 +220,25 @@ public class OTPServiceImplTest {
         idInfo1.put("uin", mailList1);
         idInfo1.put("phone", emptyList);
         idInfo1.put("email", emptyList);
-        System.out.println("idInfo1="+idInfo1);
-        Mockito.doReturn("abc@test.com").when(idInfoHelper).getEntityInfoAsString(DemoMatchType.EMAIL, idInfo1);
+        Mockito.when(entityInfoUtilMock.getEntityInfoAsString(Mockito.any(), Mockito.anyMap())).thenReturn("9384848384");
         otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
     }
 
     @SuppressWarnings("rawtypes")
     @Test
-    public void TestPhonenumberisNull() throws IdAuthenticationBusinessException, RestServiceException {
+    public void TestPhonenumberisNull_Phone_Channel_Alone() throws IdAuthenticationBusinessException, RestServiceException {
         OtpRequestDTO otpRequestDto = new OtpRequestDTO();
         otpRequestDto.setId("id");
         otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
         otpRequestDto.setTransactionID("1234567890");
-        ArrayList<String> channelList = new ArrayList<String>();
+        List<String> channelList = List.of("PHONE");
         otpRequestDto.setOtpChannel(channelList);
         otpRequestDto.setIndividualId("2345678901234");
         otpRequestDto.setIndividualIdType(IdType.UIN.getType());
         otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
         Map<String, Object> valueMap = new HashMap<>();
-        Map<String, List<IdentityInfoDTO>> idInfo = new HashMap<>();
-        List<IdentityInfoDTO> mailList = new ArrayList<>();
-        IdentityInfoDTO identityInfoDTO = new IdentityInfoDTO();
-        identityInfoDTO.setValue("abc@test.com");
-        mailList.add(identityInfoDTO);
-        idInfo.put("email", mailList);
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("email", "abc@test.com");
         valueMap.put("response", idInfo);
         Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
                 .thenReturn(valueMap);
@@ -246,22 +253,136 @@ public class OTPServiceImplTest {
         map.put("otp", "123456");
         response.setResponse(map);
         Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
         try {
             otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+            Assert.fail();
         }
         catch(IdAuthenticationBusinessException ex) {
             assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorCode(), ex.getErrorCode());
-            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorMessage(), ex.getErrorText());
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorMessage() + ". Phone Number is not found in identity data.", ex.getErrorText());
         }
     }
-
-    @Test(expected = IdAuthenticationBusinessException.class)
-    public void TestPhoneorEmailisNull() throws IdAuthenticationBusinessException, RestServiceException {
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void TestPhonenumberisNull_bothChannels() throws IdAuthenticationBusinessException, RestServiceException {
         OtpRequestDTO otpRequestDto = new OtpRequestDTO();
         otpRequestDto.setId("id");
         otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
         otpRequestDto.setTransactionID("1234567890");
-        ArrayList<String> channelList = new ArrayList<String>();
+        List<String> channelList = List.of("PHONE", "EMAIL");
+        otpRequestDto.setOtpChannel(channelList);
+        otpRequestDto.setIndividualId("2345678901234");
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("email", "abc@test.com");
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn("2345678901234");
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<Map> response = new ResponseWrapper<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("otp", "123456");
+        response.setResponse(map);
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
+        Mockito.when(entityInfoUtilMock.getEntityInfoAsString(Mockito.any(), Mockito.anyMap())).thenReturn("9384848384");
+        otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void TestEmailIdisNull_Email_Channel_Alone() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("EMAIL");
+        otpRequestDto.setOtpChannel(channelList);
+        otpRequestDto.setIndividualId("2345678901234");
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("phone", "9292292934");
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn("2345678901234");
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<Map> response = new ResponseWrapper<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("otp", "123456");
+        response.setResponse(map);
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
+        try {
+            otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+            Assert.fail();
+        }
+        catch(IdAuthenticationBusinessException ex) {
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorCode(), ex.getErrorCode());
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorMessage() + ". Email ID is not found in identity data.", ex.getErrorText());
+        }
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void TestEmailIdisNull_bothChannels() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("PHONE", "EMAIL");
+        otpRequestDto.setOtpChannel(channelList);
+        otpRequestDto.setIndividualId("2345678901234");
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("phone", "9384848384");
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn("2345678901234");
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<Map> response = new ResponseWrapper<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("otp", "123456");
+        response.setResponse(map);
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
+        Mockito.when(entityInfoUtilMock.getEntityInfoAsString(Mockito.any(), Mockito.anyMap())).thenReturn("9384848384");
+        otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+    }
+    
+    @Test
+    public void TestPhoneorEmailisNull_both_channels_provided() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("PHONE", "EMAIL");
         otpRequestDto.setOtpChannel(channelList);
         String individualId = "2345678901234";
         otpRequestDto.setIndividualId(individualId);
@@ -269,18 +390,6 @@ public class OTPServiceImplTest {
         otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
         Map<String, Object> valueMap = new HashMap<>();
         Map<String, List<IdentityInfoDTO>> idInfo = new HashMap<>();
-        List<IdentityInfoDTO> mailList = new ArrayList<>();
-        IdentityInfoDTO identityInfoDTO = new IdentityInfoDTO();
-        identityInfoDTO.setValue("abc@bc.com");
-        mailList.add(identityInfoDTO);
-        List<IdentityInfoDTO> phoneList = new ArrayList<>();
-        IdentityInfoDTO identityInfoDTO1 = new IdentityInfoDTO();
-        identityInfoDTO1.setValue("9876543210");
-        phoneList.add(identityInfoDTO1);
-        idInfo.put("email", mailList);
-        idInfo.put("mobile", phoneList);
-        valueMap.put("uin", "426789089018");
-        valueMap.put("phone", "426789089018");
         valueMap.put("response", idInfo);
         Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
                 .thenReturn(valueMap);
@@ -303,7 +412,211 @@ public class OTPServiceImplTest {
 
         Mockito.when(restHelper.requestSync(Mockito.any())).thenThrow(new RestServiceException(
                 IdRepoErrorConstants.CLIENT_ERROR, response.toString(), response));
+        try {
+			otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+            Assert.fail();
+		} catch (IdAuthenticationBusinessException ex) {
+			assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorCode(), ex.getErrorCode());
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorMessage() + ". Both Phone Number and Email ID are not found in identity data.", ex.getErrorText());
+		}
+    }
+    
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void TestPhonenumberisNull_Phone_Channel_Alone_lowercase() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("phone");
+        otpRequestDto.setOtpChannel(channelList);
+        otpRequestDto.setIndividualId("2345678901234");
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("email", "abc@test.com");
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn("2345678901234");
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<Map> response = new ResponseWrapper<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("otp", "123456");
+        response.setResponse(map);
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
+        try {
+            otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+            Assert.fail();
+        }
+        catch(IdAuthenticationBusinessException ex) {
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorCode(), ex.getErrorCode());
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorMessage() + ". Phone Number is not found in identity data.", ex.getErrorText());
+        }
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void TestPhonenumberisNull_bothChannels_lowercase() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("phone", "email");
+        otpRequestDto.setOtpChannel(channelList);
+        otpRequestDto.setIndividualId("2345678901234");
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("email", "abc@test.com");
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn("2345678901234");
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<Map> response = new ResponseWrapper<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("otp", "123456");
+        response.setResponse(map);
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
+        Mockito.when(entityInfoUtilMock.getEntityInfoAsString(Mockito.any(), Mockito.anyMap())).thenReturn("9384848384");
         otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void TestEmailIdisNull_Email_Channel_Alone_lowercase() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("email");
+        otpRequestDto.setOtpChannel(channelList);
+        otpRequestDto.setIndividualId("2345678901234");
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("phone", "9292292934");
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn("2345678901234");
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<Map> response = new ResponseWrapper<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("otp", "123456");
+        response.setResponse(map);
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
+        try {
+            otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+            Assert.fail();
+        }
+        catch(IdAuthenticationBusinessException ex) {
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorCode(), ex.getErrorCode());
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorMessage() + ". Email ID is not found in identity data.", ex.getErrorText());
+        }
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void TestEmailIdisNull_bothChannels_lowercase() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("phone", "email");
+        otpRequestDto.setOtpChannel(channelList);
+        otpRequestDto.setIndividualId("2345678901234");
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, Object> idInfo = new HashMap<>();
+        idInfo.put("phone", "9384848384");
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn("2345678901234");
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<Map> response = new ResponseWrapper<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("otp", "123456");
+        response.setResponse(map);
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenReturn(response);
+        Mockito.when(otpManager.sendOtp(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        		Mockito.any())).thenReturn(true);
+        Mockito.when(entityInfoUtilMock.getEntityInfoAsString(Mockito.any(), Mockito.anyMap())).thenReturn("9384848384");
+        otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+    }
+    
+    @Test
+    public void TestPhoneorEmailisNull_both_channels_provided_lowercase() throws IdAuthenticationBusinessException, RestServiceException {
+        OtpRequestDTO otpRequestDto = new OtpRequestDTO();
+        otpRequestDto.setId("id");
+        otpRequestDto.setRequestTime(new SimpleDateFormat(EnvUtil.getDateTimePattern()).format(new Date()));
+        otpRequestDto.setTransactionID("1234567890");
+        List<String> channelList = List.of("phone", "email");
+        otpRequestDto.setOtpChannel(channelList);
+        String individualId = "2345678901234";
+        otpRequestDto.setIndividualId(individualId);
+        otpRequestDto.setIndividualIdType(IdType.UIN.getType());
+        otpRequestDto.setRequestTime("2019-02-18T18:17:48.923+05:30");
+        Map<String, Object> valueMap = new HashMap<>();
+        Map<String, List<IdentityInfoDTO>> idInfo = new HashMap<>();
+        valueMap.put("response", idInfo);
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(idAuthService.getToken(Mockito.any())).thenReturn(individualId);
+        Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(1);
+        RestRequestDTO value = getRestDto();
+        Mockito.when(restRequestFactory.buildRequest(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(value);
+        ResponseWrapper<OtpGeneratorResponseDto> response = new ResponseWrapper<>();
+        List<ServiceError> errors = new ArrayList<>();
+        ServiceError serviceError = new ServiceError();
+        serviceError.setErrorCode(OtpErrorConstants.EMAILPHONENOTREGISTERED.getErrorCode());
+        serviceError.setMessage(OtpErrorConstants.EMAILPHONENOTREGISTERED.getErrorMessage());
+        errors.add(serviceError);
+        response.setErrors(errors);
+
+        Mockito.when(idAuthService.processIdType(Mockito.any(), Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anySet()))
+                .thenReturn(valueMap);
+        Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
+        Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
+
+        Mockito.when(restHelper.requestSync(Mockito.any())).thenThrow(new RestServiceException(
+                IdRepoErrorConstants.CLIENT_ERROR, response.toString(), response));
+        try {
+			otpServiceImpl.generateOtp(otpRequestDto, "1234567890", new TestObjectWithMetadata());
+            Assert.fail();
+		} catch (IdAuthenticationBusinessException ex) {
+			assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorCode(), ex.getErrorCode());
+            assertEquals(IdAuthenticationErrorConstants.OTP_GENERATION_FAILED.getErrorMessage() + ". Both Phone Number and Email ID are not found in identity data.", ex.getErrorText());
+		}
     }
 
     @Test(expected = IdAuthenticationBusinessException.class)
@@ -336,7 +649,6 @@ public class OTPServiceImplTest {
                 .thenReturn(valueMap);
         Mockito.when(uinHashSaltRepo.retrieveSaltById(Mockito.anyInt())).thenReturn("2344");
         Mockito.when(idAuthSecurityManager.getUser()).thenReturn("ida_app_user");
-        System.out.println("oid= "+otpRequestDTO.getIndividualId());
         Mockito.when(autntxnrepository.countRequestDTime(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(100);
         try {
             otpServiceImpl.generateOtp(otpRequestDTO, "1234567890", new TestObjectWithMetadata());
@@ -363,7 +675,7 @@ public class OTPServiceImplTest {
 //        otpRequestDto.setRequestTime(new SimpleDateFormat(env.getDateTimePattern()).format(new Date()));
         otpRequestDto.setTransactionID("1234567890");
         ArrayList<String> channelList = new ArrayList<String>();
-        channelList.add("MOBILE");
+        channelList.add("PHONE");
         channelList.add("EMAIL");
         otpRequestDto.setOtpChannel(channelList);
         otpRequestDto.setIndividualId("2345678901234");

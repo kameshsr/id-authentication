@@ -15,17 +15,37 @@
 
     <name>authentication-service</name>
     <description>Maven project of MOSIP ID-Authentication Service</description>
-
+    <properties>
+    <maven.surefire.plugin.version>2.22.0</maven.surefire.plugin.version>
+        <jacoco.maven.plugin.version>0.8.11</jacoco.maven.plugin.version>
+        <central.publishing.maven.plugin.version>0.7.0</central.publishing.maven.plugin.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.mosip.authentication</groupId>
             <artifactId>authentication-core</artifactId>
             <version>${authentication-core.version}</version>
+            <exclusions>
+            	<exclusion>
+            		<groupId>com.fasterxml.jackson.core</groupId>
+            		<artifactId>jackson-core</artifactId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.mosip.authentication</groupId>
             <artifactId>authentication-common</artifactId>
             <version>${authentication-common.version}</version>
+            <exclusions>
+            	<exclusion>
+            		<groupId>com.fasterxml.jackson.core</groupId>
+            		<artifactId>jackson-annotations</artifactId>
+            	</exclusion>
+            	<exclusion>
+            		<groupId>com.fasterxml.jackson.core</groupId>
+            		<artifactId>jackson-core</artifactId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.mosip.authentication</groupId>
@@ -71,16 +91,18 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>${postgresql.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>${spring.boot.version}</version>
             <exclusions>
             	<exclusion>
             		<groupId>com.fasterxml.jackson.core</groupId>
             		<artifactId>jackson-databind</artifactId>
+            	</exclusion>
+            	<exclusion>
+            		<groupId>com.fasterxml.jackson.core</groupId>
+            		<artifactId>jackson-core</artifactId>
             	</exclusion>
             </exclusions>
         </dependency>
@@ -88,7 +110,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-            <version>${spring.boot.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.mockito</groupId>
@@ -99,29 +120,29 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
-            <version>${spring-cloud-config.version}</version>
             <exclusions>
             	<exclusion>
             		<groupId>com.fasterxml.jackson.core</groupId>
             		<artifactId>jackson-databind</artifactId>
+            	</exclusion>
+            	<exclusion>
+            		<groupId>com.fasterxml.jackson.core</groupId>
+            		<artifactId>jackson-annotations</artifactId>
             	</exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
-            <version>${spring.boot.version}</version>
             <exclusions>
             	<exclusion>
             		<groupId>com.fasterxml.jackson.core</groupId>
@@ -132,12 +153,10 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-            <version>${io.micrometer.prometheus.version}</version>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>${io.micrometer.prometheus.version}</version>
         </dependency>
         <dependency>
             <groupId>io.mosip.kernel</groupId>
@@ -145,15 +164,9 @@
             <version>${kernel-websubclient-api.version}</version>
         </dependency>
         <dependency>
-        	<groupId>org.springdoc</groupId>
-        	<artifactId>springdoc-openapi-ui</artifactId>
-        	<version>${springdoc.version}</version>
-        	<exclusions>
-        		<exclusion>
-        			<groupId>com.fasterxml.jackson.core</groupId>
-        			<artifactId>jackson-databind</artifactId>
-        		</exclusion>
-        	</exclusions>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
         <dependency>
         	<groupId>io.mosip.kernel</groupId>
@@ -170,16 +183,27 @@
         			<groupId>com.fasterxml.jackson.core</groupId>
         			<artifactId>jackson-databind</artifactId>
         		</exclusion>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-core</artifactId>
+        		</exclusion>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-annotations</artifactId>
+        		</exclusion>
         	</exclusions>
         </dependency>
         <dependency>
         	<groupId>org.springframework.boot</groupId>
         	<artifactId>spring-boot-starter-webflux</artifactId>
-        	<version>${spring.boot.version}</version>
         	<exclusions>
         		<exclusion>
         			<groupId>com.fasterxml.jackson.core</groupId>
         			<artifactId>jackson-databind</artifactId>
+        		</exclusion>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-core</artifactId>
         		</exclusion>
         	</exclusions>
         </dependency>
@@ -204,6 +228,12 @@
             <groupId>io.mosip.biometric.util</groupId>
             <artifactId>biometrics-util</artifactId>
             <version>${kernel-biometrics-util}</version>
+            <exclusions>
+            	<exclusion>
+            		<groupId>com.fasterxml.jackson.core</groupId>
+            		<artifactId>jackson-databind</artifactId>
+            	</exclusion>
+            </exclusions>
         </dependency>
         <dependency>
 			<groupId>org.openpnp</groupId>
@@ -214,14 +244,97 @@
 			<groupId>info.weboftrust</groupId>
 			<artifactId>ld-signatures-java</artifactId>
 			<version>1.0.0</version>
-		</dependency>
+			<exclusions>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-databind</artifactId>
+				</exclusion>
+			</exclusions>
+        </dependency>
+        <dependency>
+        	<groupId>com.fasterxml.jackson.module</groupId>
+        	<artifactId>jackson-module-jaxb-annotations</artifactId>
+        	<exclusions>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-databind</artifactId>
+        		</exclusion>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-core</artifactId>
+        		</exclusion>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-annotations</artifactId>
+        		</exclusion>
+        	</exclusions>
+        </dependency>
+        <dependency>
+        	<groupId>com.fasterxml.jackson.dataformat</groupId>
+        	<artifactId>jackson-dataformat-xml</artifactId>
+        	<exclusions>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-databind</artifactId>
+        		</exclusion>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-core</artifactId>
+        		</exclusion>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-annotations</artifactId>
+        		</exclusion>
+        	</exclusions>
+        </dependency>
+        <dependency>
+        	<groupId>io.mosip.kernel</groupId>
+        	<artifactId>kernel-openid-bridge-api</artifactId>
+        	<version>${kernel-openid-bridge-api.version}</version>
+        	<exclusions>
+        		<exclusion>
+        			<groupId>com.fasterxml.jackson.core</groupId>
+        			<artifactId>jackson-databind</artifactId>
+        		</exclusion>
+        	</exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.mosip.biosdk</groupId>
+            <artifactId>biosdk-client</artifactId>
+            <version>${biosdk-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mosip.demosdk</groupId>
+            <artifactId>demosdk</artifactId>
+            <version>${demosdk.version}</version>
+        </dependency>
     </dependencies>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://central.sonatype.com/api/v1/publisher</url>
+        </repository>
+    </distributionManagement>
     <build>
         <plugins>
             <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${central.publishing.maven.plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>ossrh</publishingServerId>
+                    <autoPublish>false</autoPublish>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring.boot.version}</version>
+                <version>${spring-boot-maven-plugin.version}</version>
                 <configuration>
                     <executable>true</executable>
                     <layout>ZIP</layout>
@@ -232,42 +345,81 @@
                             <goal>build-info</goal>
                             <goal>repackage</goal>
                         </goals>
+                        <configuration>
+                            <attach>false</attach>
+                        </configuration>
                     </execution>
                 </executions>
+            </plugin>
+                    <plugin>
+                        <groupId>pl.project13.maven</groupId>
+                        <artifactId>git-commit-id-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>get-the-git-infos</id>
+                                <goals>
+                                    <goal>revision</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                            <generateGitPropertiesFilename>${project.build.outputDirectory}/service-git.properties</generateGitPropertiesFilename>
+                            <includeOnlyProperties>
+                                <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                                <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                            </includeOnlyProperties>
+                            <commitIdGenerationMode>full</commitIdGenerationMode>
+                            <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+                            <!-- <format>json</format> -->
+                        </configuration>
+                    </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.maven.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.0</version>
+                <configuration>
+                    <skipTests>false</skipTests>
+                    <skip>false</skip>
+                    <argLine>
+                        ${argLine} --add-opens
+                        java.xml/jdk.xml.internal=ALL-UNNAMED
+                        --illegal-access=permit
+                    </argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>
     <profiles>
         <profile>
             <id>openapi-doc-generate-profile</id>
-            <dependencies>
-                <dependency>
-                    <groupId>io.mosip.kernel</groupId>
-                    <artifactId>kernel-auth-adapter</artifactId>
-                    <version>1.2.0</version>
-                </dependency>
-                <dependency>
-                    <groupId>io.mosip.authentication</groupId>
-                    <artifactId>authentication-childauthfilter-impl</artifactId>
-                    <version>1.2.0</version>
-                </dependency>
-                <dependency>
-                    <groupId>io.mosip.biosdk</groupId>
-                    <artifactId>biosdk-client</artifactId>
-                    <version>1.2.0</version>
-                </dependency>
-                <dependency>
-                    <groupId>io.mosip.demosdk</groupId>
-                    <artifactId>demosdk-client</artifactId>
-                    <version>1.2.0</version>
-                </dependency>
-            </dependencies>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>
-                        <version>${spring.boot.version}</version>
+                        <version>${spring-boot-maven-plugin.version}</version>
                         <configuration>
                             <executable>true</executable>
                             <layout>ZIP</layout>
@@ -303,6 +455,39 @@
                                 <goals>
                                     <goal>build-info</goal>
                                     <goal>repackage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.22.0</version>
+                        <configuration>
+                            <skipTests>false</skipTests>
+                            <skip>false</skip>
+                            <argLine>
+                                ${argLine} --add-opens
+                                java.xml/jdk.xml.internal=ALL-UNNAMED
+                                --illegal-access=permit
+                            </argLine>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.maven.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>report</goal>
                                 </goals>
                             </execution>
                         </executions>

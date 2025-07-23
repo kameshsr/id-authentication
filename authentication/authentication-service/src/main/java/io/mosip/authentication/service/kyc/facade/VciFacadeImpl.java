@@ -3,11 +3,13 @@
  */
 package io.mosip.authentication.service.kyc.facade;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +52,7 @@ import io.mosip.authentication.core.spi.indauth.facade.VciFacade;
 import io.mosip.authentication.core.spi.indauth.match.IdInfoFetcher;
 import io.mosip.authentication.core.spi.partner.service.PartnerService;
 import io.mosip.authentication.service.kyc.impl.VciServiceImpl;
+import io.mosip.authentication.service.kyc.util.ExchangeDataAttributesUtil;
 import io.mosip.kernel.core.logger.spi.Logger;
 
 /**
@@ -102,6 +105,9 @@ public class VciFacadeImpl implements VciFacade {
 	@Autowired
 	private KycTokenDataRepository kycTokenDataRepo;
 
+	@Autowired
+	private ExchangeDataAttributesUtil exchangeDataAttributesUtil;
+
 	@Override
 	public VciExchangeResponseDTO processVciExchange(VciExchangeRequestDTO vciExchangeRequestDTO, String partnerId, 
 			String oidcClientId, Map<String, Object>  metadata, ObjectWithMetadata requestWithMetadata) throws IdAuthenticationBusinessException {
@@ -131,15 +137,15 @@ public class VciFacadeImpl implements VciFacade {
 
 			// Will implement later the consent claims based on credential definition input
 			List<String> consentAttributes = Collections.emptyList();  
-			List<String> allowedConsentAttributes = tokenValidationHelper.filterAllowedUserClaims(oidcClientId, consentAttributes);
+			List<String> allowedConsentAttributes = exchangeDataAttributesUtil.filterAllowedUserClaims(oidcClientId, consentAttributes);
 
 			PolicyDTO policyDto = policyDtoOpt.get();
 			List<String> policyAllowedKycAttribs = Optional.ofNullable(policyDto.getAllowedKycAttributes()).stream()
 						.flatMap(Collection::stream).map(KYCAttributes::getAttributeName).collect(Collectors.toList());
 
 			Set<String> filterAttributes = new HashSet<>();
-			tokenValidationHelper.mapConsentedAttributesToIdSchemaAttributes(allowedConsentAttributes, filterAttributes, policyAllowedKycAttribs);
-			Set<String> policyAllowedAttributes = tokenValidationHelper.filterByPolicyAllowedAttributes(filterAttributes, policyAllowedKycAttribs);
+			exchangeDataAttributesUtil.mapConsentedAttributesToIdSchemaAttributes(allowedConsentAttributes, filterAttributes, policyAllowedKycAttribs);
+			Set<String> policyAllowedAttributes = exchangeDataAttributesUtil.filterByPolicyAllowedAttributes(filterAttributes, policyAllowedKycAttribs);
 
 			boolean isBioRequired = false;
 			if (filterAttributes.contains(CbeffDocType.FACE.getType().value().toLowerCase()) || 
@@ -161,7 +167,8 @@ public class VciFacadeImpl implements VciFacade {
 			
 			String psuToken = kycTokenData.getPsuToken();
 			List<String> locales = vciExchangeRequestDTO.getLocales();
-			if (locales.size() == 0) {
+			if (Objects.isNull(locales) || locales.size() == 0) {
+				locales = new ArrayList<>(); // throws NullPointer if locales is null
 				locales.add(EnvUtil.getKycExchangeDefaultLanguage());
 			}
 
@@ -175,16 +182,16 @@ public class VciFacadeImpl implements VciFacade {
 			vciExchangeResponseDTO.setId(vciExchangeRequestDTO.getId());
 			vciExchangeResponseDTO.setTransactionID(vciExchangeRequestDTO.getTransactionID());
 			vciExchangeResponseDTO.setVersion(vciExchangeRequestDTO.getVersion());
-			vciExchangeResponseDTO.setResponseTime(tokenValidationHelper.getKycExchangeResponseTime(vciExchangeRequestDTO));
+			vciExchangeResponseDTO.setResponseTime(exchangeDataAttributesUtil.getKycExchangeResponseTime(vciExchangeRequestDTO));
 			vciExchangeResponseDTO.setResponse(vcResponseDTO);
 			saveToTxnTable(vciExchangeRequestDTO, false, true, partnerId, token, vciExchangeResponseDTO, requestWithMetadata);
 			auditHelper.audit(AuditModules.VCI_EXCHANGE, AuditEvents.VCI_EXCHANGE_REQUEST_RESPONSE,
-					idvidHash,	IdType.getIDTypeOrDefault(vciExchangeRequestDTO.getIndividualIdType()),
+					vciExchangeRequestDTO.getTransactionID(),	IdType.getIDTypeOrDefault(vciExchangeRequestDTO.getIndividualIdType()),
 					IdAuthCommonConstants.VCI_EXCHANGE_SUCCESS);
 			return vciExchangeResponseDTO; 
 		} catch(IdAuthenticationBusinessException e) {
 			auditHelper.audit(AuditModules.VCI_EXCHANGE, AuditEvents.VCI_EXCHANGE_REQUEST_RESPONSE,
-							  idvidHash, IdType.getIDTypeOrDefault(vciExchangeRequestDTO.getIndividualIdType()), e); 
+							  vciExchangeRequestDTO.getTransactionID(), IdType.getIDTypeOrDefault(vciExchangeRequestDTO.getIndividualIdType()), e); 
 			throw e;
 		}
 	}

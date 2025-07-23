@@ -30,7 +30,9 @@ public enum IdAuthenticationErrorConstants {
 	OTP_CHANNEL_NOT_CONFIGURED("IDA-OTA-009", "%s not configured for the country"),
 	OTP_AUTH_IDTYPE_MISMATCH("IDA-OTA-010", "Input Identity Type does not match Identity Type of OTP Request"),
 	PARTNER_ID_MISMATCH("IDA-OTA-011", "Input Partner-ID does not match Partner-ID of OTP Request"),
-
+	OTP_REQUEST_REQUIRED("IDA-OTA-012", "OTP validation can't be performed against this Individual-ID. Generate OTP first."),
+	OTP_FROZEN("IDA-OTA-013",
+			"OTP request/validation has been frozen for the Individual-ID for %s due to consecutive failure attempts for %s times."),
 
 	INVALID_TIMESTAMP("IDA-MLC-001", "Request to be received at MOSIP within %s seconds",
 			"Please send the request within %s seconds"),
@@ -65,7 +67,7 @@ public enum IdAuthenticationErrorConstants {
 			"Please capture biometrics within %s seconds of previous biometric capture"),
 	INVALID_BIO_DIGITALID_TIMESTAMP("IDA-MLC-031", "DigitalId of Biometrics not captured within %s seconds of previous biometrics",
 			"Please capture DigitalId of biometrics within %s seconds of previous biometric capture"),
-		
+	
 	DEMOGRAPHIC_DATA_MISMATCH_LANG("IDA-DEA-001", "Demographic data %s in %s did not match",
 				"Please re-enter your %s in %s"),
 	DEMO_DATA_MISMATCH("IDA-DEA-001", "Demographic data %s did not match", "Please re-enter your %s"),
@@ -94,7 +96,8 @@ public enum IdAuthenticationErrorConstants {
 
 	BINDED_KEY_NOT_FOUND("IDA-KBT-001", "Certificate not found for the input x5t#S256: %s and authtype: %s"),
 	BINDED_TOKEN_EXPIRED("IDA-KBT-002", "Signed token issued at (iat) is not in allowed time range."),
-	ERROR_TOKEN_VERIFICATION("IDA-KBT-003", "Error verifying key binded token. Error: %s"),
+	ERROR_TOKEN_VERIFICATION("IDA-KBT-003", "Binded Token verification failed.", 
+					"Please retry token generation with correct Key."),
 
 
 	INVALID_ENCRYPT_EKYC_RESPONSE("IDA-EKA-001", "Unable to encrypt eKYC response"),
@@ -147,6 +150,9 @@ public enum IdAuthenticationErrorConstants {
 	UNAUTHORISED_VCI_EXCHANGE_PARTNER("IDA-MPA-036", "Partner is unauthorised for VCI-Exchange"),
 	VCI_EXCHANGE_NOT_ALLOWED("IDA-MPA-037", "%s not allowed as per policy",
 			"Please try after updating misp policy"),
+	URI_PATH_PARAMS_MISSING("IDA-MPA-038", "Required Number of Path parameters are missing in URI",
+			"Please try adding all the required path parameters."),
+	PARTNER_API_EXPIRED("IDA-MPA-039", "Partner API is expired or using before Commence Start Date."),
 
 
 	DATA_VALIDATION_FAILED("IDA-IDV-001", "Input Data Validation Failed"),
@@ -210,9 +216,12 @@ public enum IdAuthenticationErrorConstants {
 	CREATE_VCI_PUBLIC_KEY_OBJECT_ERROR("IDA-VCI-002", "Error creating Public Key object."),
 	KEY_ALREADY_MAPPED_ERROR("IDA-VCI-003", "Error Key already mapped to different id/vid."),
 	VCI_NOT_SUPPORTED_ERROR("IDA-VCI-004", "Error VCI not supported."),
-	LDP_VC_GENERATION_FAILED("IDA-VCI-005", "Ldp VC generation Failed.");
+	LDP_VC_GENERATION_FAILED("IDA-VCI-005", "Ldp VC generation Failed."),
 
-	
+	PASSWORD_MISMATCH("IDA-PSD-001", "Password value did not match", "Please re-enter your correct password"),
+	PASSWORD_MISSING("IDA-PSD-002", "For the input VID/UIN - No Password found in DB.",
+			"Please use UIN/VID with Password Auth.");
+
 	private final String errorCode;
 	private final String errorMessage;
 	private String actionMessage;

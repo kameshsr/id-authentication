@@ -10,13 +10,13 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.Map.Entry;
-import java.util.AbstractMap.SimpleEntry;
 
 import javax.crypto.SecretKey;
 import javax.security.auth.x500.X500Principal;
@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import io.mosip.kernel.cryptomanager.dto.JWTEncryptRequestDto;
 import io.mosip.authentication.common.service.repository.IdaUinHashSaltRepo;
 import io.mosip.authentication.common.service.repository.IdentityCacheRepository;
 import io.mosip.authentication.common.service.util.EnvUtil;
@@ -48,9 +49,10 @@ import io.mosip.kernel.core.retry.WithRetry;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.kernel.core.util.HMACUtils2;
 import io.mosip.kernel.crypto.jce.core.CryptoCore;
+import io.mosip.kernel.cryptomanager.dto.Argon2GenerateHashRequestDto;
+import io.mosip.kernel.cryptomanager.dto.Argon2GenerateHashResponseDto;
 import io.mosip.kernel.cryptomanager.dto.CryptomanagerRequestDto;
 import io.mosip.kernel.cryptomanager.dto.JWTCipherResponseDto;
-import io.mosip.kernel.cryptomanager.dto.JWTEncryptRequestDto;
 import io.mosip.kernel.cryptomanager.service.CryptomanagerService;
 import io.mosip.kernel.cryptomanager.util.CryptomanagerUtils;
 import io.mosip.kernel.keygenerator.bouncycastle.KeyGenerator;
@@ -193,7 +195,7 @@ public class IdAuthSecurityManager {
 	
 	@Autowired
 	private IdTypeUtil idTypeUtil;
-
+	
 	/**
 	 * Gets the user.
 	 *
@@ -511,6 +513,15 @@ public class IdAuthSecurityManager {
 		return Tuples.of(CryptoUtil.encodeBase64Url(encryptedData.getT1()), CryptoUtil.encodeBase64Url(encryptedData.getT2()), digestAsPlainText(certificateThumbprint));
 	}
 
+	public String asymmetricEncryption(byte[] dataToEncrypt, String partnerCertificate)
+			throws IdAuthenticationBusinessException {
+		X509Certificate x509Certificate = getX509Certificate(partnerCertificate);
+		PublicKey publicKey = x509Certificate.getPublicKey();
+		byte[] encryptedData = cryptoCore.asymmetricEncrypt(publicKey, dataToEncrypt);
+		return CryptoUtil.encodeBase64(encryptedData);
+
+	}
+
 	/**
 	 * Encrypt.
 	 *
@@ -666,7 +677,8 @@ public class IdAuthSecurityManager {
 	public String jwsSignWithPayload(String data) {
 		JWSSignatureRequestDto request = new JWSSignatureRequestDto();
 		request.setApplicationId(vciExchSignApplicationId);
-		request.setDataToSign(CryptoUtil.encodeBase64Url(data.getBytes()));
+		//request.setDataToSign(CryptoUtil.encodeBase64Url(data.getBytes()));
+		request.setDataToSign(data);
 		request.setIncludeCertHash(false);
 		request.setIncludeCertificate(includeCertificate);
 		request.setIncludePayload(false);
@@ -704,5 +716,13 @@ public class IdAuthSecurityManager {
 		encryptRequestDto.setIncludeCertHash(true);
 		JWTCipherResponseDto cipherResponseDto = cryptomanagerService.jwtEncrypt(encryptRequestDto);
 		return cipherResponseDto.getData();
+	}
+
+	public String generateArgon2Hash(String anyString, String salt) {
+		Argon2GenerateHashRequestDto hashRequestDto = new Argon2GenerateHashRequestDto(); 
+		hashRequestDto.setInputData(anyString);
+		hashRequestDto.setSalt(salt);
+		Argon2GenerateHashResponseDto hashResponseDto = cryptomanagerService.generateArgon2Hash(hashRequestDto);
+		return hashResponseDto.getHashValue();
 	}
 }

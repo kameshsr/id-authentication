@@ -1,6 +1,9 @@
 package io.mosip.authentication.service;
 
-import io.mosip.authentication.common.service.util.KeyBindedTokenMatcherUtil;
+import io.mosip.authentication.common.service.helper.*;
+import io.mosip.authentication.common.service.integration.*;
+import io.mosip.authentication.common.service.util.*;
+import io.mosip.kernel.keymanagerservice.validator.ECKeyPairGenRequestValidator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -19,12 +22,6 @@ import io.mosip.authentication.common.service.exception.IdAuthExceptionHandler;
 import io.mosip.authentication.common.service.facade.AuthFacadeImpl;
 import io.mosip.authentication.common.service.factory.AuditRequestFactory;
 import io.mosip.authentication.common.service.factory.RestRequestFactory;
-import io.mosip.authentication.common.service.helper.AuditHelper;
-import io.mosip.authentication.common.service.helper.AuthTransactionHelper;
-import io.mosip.authentication.common.service.helper.ExternalRestHelperConfig;
-import io.mosip.authentication.common.service.helper.IdInfoHelper;
-import io.mosip.authentication.common.service.helper.TokenValidationHelper;
-import io.mosip.authentication.common.service.helper.WebSubHelper;
 import io.mosip.authentication.common.service.impl.AuthAnonymousProfileServiceImpl;
 import io.mosip.authentication.common.service.impl.AuthContextClazzRefProvider;
 import io.mosip.authentication.common.service.impl.AuthtypeStatusImpl;
@@ -33,23 +30,15 @@ import io.mosip.authentication.common.service.impl.DemoAuthServiceImpl;
 import io.mosip.authentication.common.service.impl.IdInfoFetcherImpl;
 import io.mosip.authentication.common.service.impl.IdServiceImpl;
 import io.mosip.authentication.common.service.impl.OTPAuthServiceImpl;
+import io.mosip.authentication.common.service.impl.PasswordAuthServiceImpl;
 import io.mosip.authentication.common.service.impl.KeyBindedTokenAuthServiceImpl;
 import io.mosip.authentication.common.service.impl.hotlist.HotlistServiceImpl;
 import io.mosip.authentication.common.service.impl.masterdata.MasterDataCacheUpdateServiceImpl;
 import io.mosip.authentication.common.service.impl.notification.NotificationServiceImpl;
 import io.mosip.authentication.common.service.impl.patrner.PartnerCACertEventServiceImpl;
 import io.mosip.authentication.common.service.impl.patrner.PartnerServiceImpl;
-import io.mosip.authentication.common.service.integration.IdTemplateManager;
-import io.mosip.authentication.common.service.integration.KeyManager;
-import io.mosip.authentication.common.service.integration.MasterDataManager;
-import io.mosip.authentication.common.service.integration.NotificationManager;
-import io.mosip.authentication.common.service.integration.OTPManager;
-import io.mosip.authentication.common.service.integration.PartnerServiceManager;
-import io.mosip.authentication.common.service.integration.TokenIdManager;
+import io.mosip.authentication.common.service.kafka.impl.AuthenticationErrorEventingPublisher;
 import io.mosip.authentication.common.service.transaction.manager.IdAuthSecurityManager;
-import io.mosip.authentication.common.service.util.BioMatcherUtil;
-import io.mosip.authentication.common.service.util.EnvUtil;
-import io.mosip.authentication.common.service.util.IdaRequestResponsConsumerUtil;
 import io.mosip.authentication.common.service.validator.AuthFiltersValidator;
 import io.mosip.authentication.common.service.validator.AuthRequestValidator;
 import io.mosip.authentication.common.service.websub.IdAuthWebSubInitializer;
@@ -75,10 +64,10 @@ import io.mosip.kernel.core.util.RetryUtil;
 import io.mosip.kernel.crypto.jce.core.CryptoCore;
 import io.mosip.kernel.cryptomanager.service.impl.CryptomanagerServiceImpl;
 import io.mosip.kernel.cryptomanager.util.CryptomanagerUtils;
-import io.mosip.kernel.dataaccess.hibernate.config.HibernateDaoConfig;
 import io.mosip.kernel.keygenerator.bouncycastle.KeyGenerator;
 import io.mosip.kernel.keymanager.hsm.impl.KeyStoreImpl;
 import io.mosip.kernel.keymanagerservice.helper.KeymanagerDBHelper;
+import io.mosip.kernel.keymanagerservice.helper.PrivateKeyDecryptorHelper;
 import io.mosip.kernel.keymanagerservice.helper.SessionKeyDecrytorHelper;
 import io.mosip.kernel.keymanagerservice.service.impl.KeymanagerServiceImpl;
 import io.mosip.kernel.keymanagerservice.util.KeymanagerUtil;
@@ -91,7 +80,9 @@ import io.mosip.kernel.tokenidgenerator.generator.TokenIDGenerator;
 import io.mosip.kernel.tokenidgenerator.service.impl.TokenIDGeneratorServiceImpl;
 import io.mosip.kernel.zkcryptoservice.service.impl.ZKCryptoManagerServiceImpl;
 import io.mosip.kernel.keymanager.hsm.health.HSMHealthCheck;
-import io.mosip.kernel.keymanagerservice.helper.PrivateKeyDecryptorHelper;
+import io.mosip.kernel.pdfgenerator.itext.impl.PDFGeneratorImpl;
+import io.mosip.kernel.websub.api.config.publisher.RestTemplateHelper;
+
 
 /**
  * Spring-boot class for ID Authentication Application.
@@ -99,9 +90,9 @@ import io.mosip.kernel.keymanagerservice.helper.PrivateKeyDecryptorHelper;
  * @author Dinesh Karuppiah
  * @author Nagarjuna
  */
-@SpringBootApplication(exclude = { HibernateDaoConfig.class, SecurityAutoConfiguration.class })
+@SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
 @Import(value = { IdValidationUtil.class, IDAMappingConfig.class, KeyBindedTokenAuthServiceImpl.class,
-		AuthContextClazzRefProvider.class, CbeffImpl.class,
+		AuthContextClazzRefProvider.class, CbeffImpl.class, 
 		RestRequestFactory.class, AuditRequestFactory.class, AuditRequestFactory.class, NotificationManager.class,
 		NotificationServiceImpl.class, IdTemplateManager.class, TemplateManagerBuilderImpl.class, IdAuthExceptionHandler.class,
 		IdInfoFetcherImpl.class, OTPManager.class, MasterDataManager.class, IdInfoHelper.class, OTPAuthServiceImpl.class,
@@ -121,13 +112,22 @@ import io.mosip.kernel.keymanagerservice.helper.PrivateKeyDecryptorHelper;
 		IdAuthFraudAnalysisEventManager.class, IdAuthFraudAnalysisEventPublisher.class, AuthFiltersValidator.class,
 		AuthAnonymousProfileServiceImpl.class, AuthAnonymousEventPublisher.class, SessionKeyDecrytorHelper.class, ExternalRestHelperConfig.class, IdaRequestResponsConsumerUtil.class,
 		PartnerCACertEventServiceImpl.class, PartnerCACertEventInitializer.class, EnvUtil.class, KeyBindedTokenMatcherUtil.class,
-		HSMHealthCheck.class, PrivateKeyDecryptorHelper.class, TokenValidationHelper.class, VCSchemaProviderUtil.class })
+		HSMHealthCheck.class, TokenValidationHelper.class, VCSchemaProviderUtil.class, PrivateKeyDecryptorHelper.class, 
+		PasswordAuthServiceImpl.class, PasswordComparator.class, AuthenticationErrorEventingPublisher.class,
+		PasswordAuthServiceImpl.class, PasswordComparator.class, AuthenticationErrorEventingPublisher.class,
+		PDFGeneratorImpl.class, RestTemplateHelper.class, LanguageUtil.class, IdentityAttributesForMatchTypeHelper.class
+, TypeForIdNameHelper.class
+		, ValidateOtpHelper.class, RequireOtpNotFrozenHelper.class, MatchIdentityDataHelper.class, MatchTypeHelper.class
+		, SeparatorHelper.class, ECKeyPairGenRequestValidator.class})
 @ComponentScan(basePackages = { "io.mosip.authentication.service.*", "io.mosip.kernel.core.logger.config",
-		"io.mosip.authentication.common.service.config", "${mosip.auth.adapter.impl.basepackage}" }, excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = {
+		"io.mosip.authentication.common.service.config","io.mosip.authentication.common.service.util",
+		"io.mosip.kernel.websub.api.config",
+		"${mosip.auth.adapter.impl.basepackage}"
+, "io.mosip.kernel.websub.api.client"}, excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = {
 				"io.mosip.idrepository.core.config.IdRepoDataSourceConfig.*" }))
 @EnableJpaRepositories(basePackages = { "io.mosip.authentication.common.service.repository.*",
 		"io.mosip.kernel.keymanagerservice.repository.*" })
-public class IdAuthenticationApplication {
+public class  IdAuthenticationApplication {
 
 	/**
 	 * The main method.

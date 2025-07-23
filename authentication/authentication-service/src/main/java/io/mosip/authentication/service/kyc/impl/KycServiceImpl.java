@@ -4,6 +4,7 @@ import static io.mosip.authentication.core.constant.IdAuthCommonConstants.LANG_C
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.ValueRange;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +19,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.mosip.authentication.common.service.util.EntityInfoUtil;
 import org.apache.commons.codec.DecoderException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,7 +54,6 @@ import io.mosip.biometrics.util.ConvertRequestDto;
 import io.mosip.biometrics.util.face.FaceDecoder;
 import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.biometrics.spi.CbeffUtil;
-import io.mosip.kernel.core.cbeffutil.jaxbclasses.BIRType;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
 
@@ -123,6 +124,10 @@ public class KycServiceImpl implements KycService {
 	
 	@Autowired
 	private CbeffUtil cbeffUtil;
+
+	@Autowired
+	private EntityInfoUtil entityInfoUtil;
+
 	/**
 	 * Retrieve kyc info.
 	 *
@@ -146,7 +151,7 @@ public class KycServiceImpl implements KycService {
 		if (Objects.nonNull(identityInfo) && Objects.nonNull(allowedkycAttributes) && !allowedkycAttributes.isEmpty()) {
 			Optional<String> faceAttribute = IdInfoHelper.getKycAttributeHasPhoto(allowedkycAttributes);
 			if(faceAttribute.isPresent()) {
-				Map<String, String> faceEntityInfoMap = idInfoHelper.getIdEntityInfoMap(BioMatchType.FACE, identityInfo,
+				Map<String, String> faceEntityInfoMap = entityInfoUtil.getIdEntityInfoMap(BioMatchType.FACE, identityInfo,
 						null);
 				String faceCbeff = Objects.nonNull(faceEntityInfoMap)
 						? faceEntityInfoMap.get(CbeffDocType.FACE.getType().value())
@@ -338,7 +343,7 @@ public class KycServiceImpl implements KycService {
 	 */
 	private String getEntityForMatchType(MatchType matchType, Map<String, List<IdentityInfoDTO>> filteredIdentityInfo) {
 		try {
-			return idInfoHelper.getEntityInfoAsString(matchType, filteredIdentityInfo);
+			return entityInfoUtil.getEntityInfoAsString(matchType, filteredIdentityInfo);
 		} catch (IdAuthenticationBusinessException e) {
 			mosipLogger.error(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "getEntityForMatchType",
 					e.getErrorTexts().isEmpty() ? "" : e.getErrorText());
@@ -356,7 +361,7 @@ public class KycServiceImpl implements KycService {
 	 */
 	private String getEntityForMatchType(MatchType matchType, Map<String, List<IdentityInfoDTO>> filteredIdentityInfo, String langCode) {
 		try {
-			return idInfoHelper.getEntityInfoAsString(matchType, langCode, filteredIdentityInfo);
+			return entityInfoUtil.getEntityInfoAsString(matchType, langCode, filteredIdentityInfo);
 		} catch (IdAuthenticationBusinessException e) {
 			mosipLogger.error(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "getEntityForMatchType",
 					e.getErrorTexts().isEmpty() ? "" : e.getErrorText());
@@ -441,9 +446,11 @@ public class KycServiceImpl implements KycService {
 		LocalDateTime currentTime = LocalDateTime.now();
 		
 		long diffSeconds = ChronoUnit.SECONDS.between(tokenIssuedDateTime, currentTime);
+		
 		long adjustmentSeconds = EnvUtil.getKycTokenExpireTimeAdjustmentSeconds();
+		ValueRange valueRange = ValueRange.of(0, adjustmentSeconds);
 
-		if (tokenIssuedDateTime != null && adjustmentSeconds < diffSeconds) {
+		if (tokenIssuedDateTime != null && !valueRange.isValidIntValue(diffSeconds)) {
 			return true;
 		}
 		return false;
@@ -452,8 +459,7 @@ public class KycServiceImpl implements KycService {
 
 	@Override
 	public String buildKycExchangeResponse(String subject, Map<String, List<IdentityInfoDTO>> idInfo, 
-				List<String> consentedAttributes, List<String> consentedLocales, String idVid, KycExchangeRequestDTO kycExchangeRequestDTO) 
-					throws IdAuthenticationBusinessException {
+				List<String> consentedAttributes, List<String> consentedLocales, String idVid, KycExchangeRequestDTO kycExchangeRequestDTO) throws IdAuthenticationBusinessException {
 		
 		mosipLogger.info(IdAuthCommonConstants.SESSION_ID, this.getClass().getSimpleName(), "buildKycExchangeResponse",
 					"Building claims response for PSU token: " + subject);
@@ -500,7 +506,7 @@ public class KycServiceImpl implements KycService {
 					"Face Bio not found in DB. So not adding to response claims.");
 				return;
 			}
-			Map<String, String> faceEntityInfoMap = idInfoHelper.getIdEntityInfoMap(BioMatchType.FACE, idInfo, null);
+			Map<String, String> faceEntityInfoMap = entityInfoUtil.getIdEntityInfoMap(BioMatchType.FACE, idInfo, null);
 			if (Objects.nonNull(faceEntityInfoMap)) {
 				try {
 					String face = convertJP2ToJpeg(getFaceBDB(faceEntityInfoMap.get(CbeffDocType.FACE.getType().value())));

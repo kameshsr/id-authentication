@@ -47,6 +47,8 @@ import io.mosip.authentication.core.spi.indauth.service.IdentityKeyBindingServic
 import io.mosip.authentication.core.spi.partner.service.PartnerService;
 import io.mosip.kernel.core.logger.spi.Logger;
 
+import jakarta.validation.constraints.NotNull;
+
 /**
  *
  * Facade for Identity Key Binding
@@ -125,7 +127,7 @@ public class IdentityKeyBindingFacadeImpl implements IdentityKeyBindingFacade {
 
     @SuppressWarnings("unchecked")
 	@Override
-	public IdentityKeyBindingResponseDto processIdentityKeyBinding(IdentityKeyBindingRequestDTO identityKeyBindingRequestDTO, 
+	public IdentityKeyBindingResponseDto processIdentityKeyBinding(@NotNull IdentityKeyBindingRequestDTO identityKeyBindingRequestDTO,
 					AuthResponseDTO authResponseDTO, String partnerId, String oidcClientId, Map<String, Object>  metadata) 
 					throws IdAuthenticationBusinessException {
 		boolean status;
@@ -144,14 +146,14 @@ public class IdentityKeyBindingFacadeImpl implements IdentityKeyBindingFacade {
 			status = keyBindingResponseEntry.getValue();
 			saveToTxnTable(identityKeyBindingRequestDTO, status, partnerId, token, authResponseDTO, keyBindingResponseDto, metadata);
 			auditHelper.audit(AuditModules.IDENTITY_KEY_BINDING, AuditEvents.KEY_BINDIN_REQUEST_RESPONSE,
-					idHash,	IdType.getIDTypeOrDefault(identityKeyBindingRequestDTO.getIndividualIdType()),
+					identityKeyBindingRequestDTO.getTransactionID(),	IdType.getIDTypeOrDefault(identityKeyBindingRequestDTO.getIndividualIdType()),
 					"Identity Key Binding status : " + status);
 			return keyBindingResponseDto;
 		} catch (IdAuthenticationBusinessException e) {
 			status = false;
 			saveToTxnTable(identityKeyBindingRequestDTO, status, partnerId, token, authResponseDTO, keyBindingResponseDto, metadata);
 			auditHelper.audit(AuditModules.IDENTITY_KEY_BINDING, AuditEvents.KEY_BINDIN_REQUEST_RESPONSE,
-								idHash, IdType.getIDTypeOrDefault(identityKeyBindingRequestDTO.getIndividualIdType()), e);
+								identityKeyBindingRequestDTO.getTransactionID(), IdType.getIDTypeOrDefault(identityKeyBindingRequestDTO.getIndividualIdType()), e);
 			throw e;
 		}
 	}

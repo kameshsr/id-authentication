@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -147,7 +147,7 @@ public class IdentityWalletBindingController {
 						metadata != null && 
 								metadata.get(IdAuthCommonConstants.IDENTITY_DATA) != null &&
 										metadata.get(IdAuthCommonConstants.IDENTITY_INFO) != null) {
-					keyBindingResponseDto = keyIdentityFacade.processIdentityKeyBinding(identityKeyBindingRequestDTO, authResponseDTO, 
+ 					keyBindingResponseDto = keyIdentityFacade.processIdentityKeyBinding(identityKeyBindingRequestDTO, authResponseDTO, 
 								partnerId, oidcClientId, metadata);
 				}
 				return keyBindingResponseDto;

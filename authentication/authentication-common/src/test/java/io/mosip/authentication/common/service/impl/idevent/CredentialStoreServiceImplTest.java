@@ -14,11 +14,13 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.batch.item.Chunk;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -51,7 +53,6 @@ import io.mosip.idrepository.core.constant.IdRepoErrorConstants;
 import io.mosip.idrepository.core.dto.CredentialRequestIdsDto;
 import io.mosip.idrepository.core.exception.RestServiceException;
 import io.mosip.kernel.core.websub.model.EventModel;
-
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = { TestContext.class, WebApplicationContext.class })
 @WebMvcTest
@@ -142,7 +143,7 @@ public class CredentialStoreServiceImplTest {
         credentialEventStore.setStatusCode("STORED");
         ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "processCredentialStoreEvent", credentialEventStore);
     }
-    
+
     @Test
     public void ProcessCredentialStoreEventTest_exception()
             throws RestServiceException, IOException, IdAuthenticationBusinessException {
@@ -191,7 +192,7 @@ public class CredentialStoreServiceImplTest {
         isRecoverableException=false;
         ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "updateEventProcessingStatus", credentialEventStore, isSuccess, isRecoverableException, credentialEventStore.getStatusCode());
     }
-    
+
     @Test
     public void UpdateEventProcessingStatusTest_auditError() throws IDDataValidationException{
         CredentialEventStore credentialEventStore = getCredentialEventStore();
@@ -242,7 +243,7 @@ public class CredentialStoreServiceImplTest {
 			}
 		}
     }
-    
+
     @Test
     public void doProcessCredentialStoreEventTest_parseError() throws IOException, RestServiceException, IdAuthenticationBusinessException {
         CredentialEventStore credentialEventStore = getCredentialEventStore();
@@ -262,7 +263,7 @@ public class CredentialStoreServiceImplTest {
 			}
 		}
     }
-    
+
     @Test
     public void doProcessCredentialStoreEventTest_dataShareDownloadError() throws IOException, RestServiceException, IdAuthenticationBusinessException {
         CredentialEventStore credentialEventStore = getCredentialEventStore();
@@ -282,7 +283,7 @@ public class CredentialStoreServiceImplTest {
 			}
 		}
     }
-    
+
     @Test
     public void doProcessCredentialStoreEventTest_dataShareDownloadError_datavalidationError() throws IOException, RestServiceException, IdAuthenticationBusinessException {
         CredentialEventStore credentialEventStore = getCredentialEventStore();
@@ -317,7 +318,7 @@ public class CredentialStoreServiceImplTest {
         credentialEventStore.setStatusCode("STORED");
         Optional<CredentialEventStore> eventOpt = Optional.of(credentialEventStore);
         Mockito.when(credentialEventRepo.findTop1ByCredentialTransactionIdOrderByCrDTimesDesc(dto.getRequestId())).thenReturn(eventOpt);
-        ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "processMissingCredentialRequestId", dtoList);
+        ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "processMissingCredentialRequestId", dto);
         //
         //with status_code = "FAILED_WITH_MAX_RETRIES"
         credentialEventStore.setStatusCode("FAILED_WITH_MAX_RETRIES");
@@ -338,8 +339,8 @@ public class CredentialStoreServiceImplTest {
      */
     @Test
     public void storeIdentityEntityTest(){
-        List<IdentityEntity> idEntitites = new ArrayList<IdentityEntity>();
-        ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "storeIdentityEntity", idEntitites);
+        IdentityEntity identityEntity = new IdentityEntity();
+        ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "storeIdentityEntity", identityEntity);
     }
 
     @Test(expected = UndeclaredThrowableException.class)
@@ -364,7 +365,6 @@ public class CredentialStoreServiceImplTest {
         Map<String, Object> credentialData = new HashMap<>();
         Map<String, String> map = objectMapper.readValue(getCredentialServiceJsonStr(), Map.class);
         credentialData.put("credentialSubject", map);
-        System.out.println(credentialData);
         IdentityEntity identityEntity = new IdentityEntity();
         Mockito.when(identityCacheRepo.findById(idHash)).thenReturn(Optional.of(identityEntity));
         ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "createIdentityEntity", idHash, token, transactionLimit, expiryTime, credentialData);
@@ -375,7 +375,7 @@ public class CredentialStoreServiceImplTest {
         String requestId=null;
         ReflectionTestUtils.invokeMethod(credentialStoreServiceImpl, "retriggerCredentialIssuance", requestId);
     }
-    
+
     @Test(expected = IdAuthRetryException.class)
     public void retriggerCredentialIssuanceTest_exception() throws IDDataValidationException, RestServiceException{
         String requestId="abc";
@@ -488,5 +488,4 @@ public class CredentialStoreServiceImplTest {
                 "}";
     }
 }
-
 
