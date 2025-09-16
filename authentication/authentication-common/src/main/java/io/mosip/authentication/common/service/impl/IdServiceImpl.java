@@ -114,6 +114,7 @@ public class IdServiceImpl implements IdService<AutnTxn> {
      *                                           exception
      */
     @Override
+    @Transactional
     public Map<String, Object> processIdType(String idvIdType, String idvId, boolean isBio, boolean markVidConsumed, Set<String> filterAttributes)
             throws IdAuthenticationBusinessException {
 
@@ -379,7 +380,6 @@ public class IdServiceImpl implements IdService<AutnTxn> {
      * @param vid the vid
      * @throws IdAuthenticationBusinessException the id authentication business exception
      */
-    @Transactional
     private void updateVIDstatus(String vid) throws IdAuthenticationBusinessException {
         try {
             final String hashedVid = securityManager.hash(vid);
