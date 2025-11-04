@@ -122,7 +122,9 @@
         "TC_DependentModule_IdRepo_06"
     ],
     "TC_IDA_EkycOtp_11": ["TC_DependentModule_IdRepo_09"],
-    "TC_IDA_SendOTP_10": ["TC_IDA_GenerateVID_08"],
+  "TC_IDA_SendOTP_10": ["TC_DependentModule_IdRepo_57", 
+    "TC_IDA_HotlistAPI_13", 
+    "TC_IDA_GenerateVID_11"],
     "TC_IDA_DemoAuth_blockedVID_02": ["TC_IDA_GenerateVID_01"],
     "TC_IDA_EkycBio_04": ["TC_IDA_GetDraft_01"],
     "TC_IDA_EkycBio_05": ["TC_DependentModule_IdRepo_09"],
