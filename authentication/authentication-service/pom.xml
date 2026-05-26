@@ -57,6 +57,11 @@
             <artifactId>authentication-hotlistfilter-impl</artifactId>
             <version>${authentication-hotlistfilter-impl.version}</version>
         </dependency>
+		<dependency>
+    <groupId>io.mosip.kernel</groupId>
+    <artifactId>kernel-auth-adapter</artifactId>
+    <version>1.3.0</version>
+</dependency>
         <dependency>
             <groupId>io.mosip.kernel</groupId>
             <artifactId>kernel-pinvalidator</artifactId>
